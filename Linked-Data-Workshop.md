@@ -24,6 +24,12 @@ Working as a team
 * mailing list at W3C
 * 
 
+Roadmap to Release v1.0
+-----------------------
+
+* What is required? Code quality, community feedback,...?
+* What can be put on hold for later?
+
 Open issues
 -----------
 
