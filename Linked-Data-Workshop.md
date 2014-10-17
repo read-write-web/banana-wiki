@@ -29,3 +29,17 @@ Open issues
 
 * how many are still relevant?
 * prioritization
+
+New Initiatives
+---------------
+
+* Test frameworks - jasmine (port JS -> scala), specs2 (port scala -> JS)
+* Owl inference support
+* BigData reactive drivers
+* Approach - internal/external to banana-rdf?
+
+Promotion
+---------
+* Website with overview, news, documentation, team, roadmap, download, etc. examples - [argonaut](http://argonaut.io/), [scala-ide](http://scala-ide.org/)
+* Contact details - eg see [typelevel - about.html](http://typelevel.org/about.html)
+* Active promotion to existing projects, such as [semweb](https://github.com/scalax/semweb)
