@@ -18,13 +18,13 @@ When comparing tests of different underlying RDF implementations, like
     [RDF operations trait](https://github.com/w3c/banana-rdf/blob/master/rdf/common/src/main/scala/org/w3/banana/RDFOps.scala),
     and [Sparql operations trait](https://github.com/w3c/banana-rdf/blob/master/rdf/common/src/main/scala/org/w3/banana/SparqlOps.scala)
 
- In general there are two common ways of implementing a generic library that supports many implementations
-  1) Convince them all to adopt common interfaces. In reality it is hard to achieve as negotiations with libraries maintainers are required
+ In general there are two common ways of implementing a generic library that supports many implementations:
+  1. Convince them all to adopt common interfaces. In reality it is hard to achieve as negotiations with libraries maintainers are required
   and often such implementations are not full.
-  2) Wrap classes of other libraries into your own classes. In such case no negotiations are needed, but
+  2. Wrap classes of other libraries into your own classes. In such case no negotiations are needed, but
   wrapping takes efforts and is not good for performance and code clarity.
 
-  'banana-rdf' uses neither of them! By leveraging such cool features of scala like type classes, implicits and type aliases it is possible
+'banana-rdf' uses neither of them! By leveraging such cool features of scala like type classes, implicits and type aliases it is possible
   to add support of many implementations without wrapping and negotiations.
 
 As an example let's look how Sesame support is done. RDF trait is a class containing type aliases. Sesame trait just assigns
