@@ -1,5 +1,5 @@
-Core concept or one RDF library to rule 'em all!
--------------------------------------------------
+...or one RDF library to rule 'em all!
+--------------------------------------
 
 Until we write thorough documentation, the best place to understand
 what you can do is to go through the [test
