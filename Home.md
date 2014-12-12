@@ -16,16 +16,10 @@ most of the RDF syntaxes as well as JSON-LD (RDFa will come soon) [read more abo
 Documentation
 =============
 
-[Getting started](https://github.com/w3c/banana-rdf/wiki/Getting-started)
-
 [Main features](https://github.com/w3c/banana-rdf/wiki/Features)
 
-[Core concepts](https://github.com/w3c/banana-rdf/wiki/Core-concepts)
+[Getting started](https://github.com/w3c/banana-rdf/wiki/Getting-started)
 
-[Using banana-rdf with Sesame](https://github.com/w3c/banana-rdf/wiki/Sesame)
-
-[Using banana-rdf with Jena](https://github.com/w3c/banana-rdf/wiki/Jena)
-
-[Using Banana-rdf in the browser](https://github.com/w3c/banana-rdf/wiki/Scalajs)
+[Using banana-rdf](https://github.com/w3c/banana-rdf/wiki/Usage)
 
 [Writing banana support for your RDF library](https://github.com/w3c/banana-rdf/wiki/Core-concepts)
