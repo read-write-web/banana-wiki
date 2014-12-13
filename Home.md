@@ -24,6 +24,9 @@ Documentation
 
 [Making a SPARQL request](https://github.com/w3c/banana-rdf/wiki/Usage-SPARQL)
 
+[Writing and reading RDF files](https://github.com/w3c/banana-rdf/wiki/Usage-IO)
+
+
 ### How it works
 
 [Core concepts](https://github.com/w3c/banana-rdf/wiki/Core-concepts)
