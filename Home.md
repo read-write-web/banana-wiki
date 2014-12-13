@@ -20,6 +20,10 @@ Documentation
 
 [Getting started](https://github.com/w3c/banana-rdf/wiki/Getting-started)
 
-[Using banana-rdf](https://github.com/w3c/banana-rdf/wiki/Usage)
+### Using banana-rdf
 
-[Writing banana support for your RDF library](https://github.com/w3c/banana-rdf/wiki/Core-concepts)
+[Making a SPARQL request](https://github.com/w3c/banana-rdf/wiki/Usage-SPARQL)
+
+### How it works
+
+[Core concepts](https://github.com/w3c/banana-rdf/wiki/Core-concepts)
