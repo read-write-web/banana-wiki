@@ -68,4 +68,4 @@ Documentation
 
 ### Screencasts about banana-rdf
 
-[Building a Secure Distributed Social Web using Scala & Scala-JS)](skillsmatter.com/skillscasts/5960-building-a-secure-distributed-social-web-using-scala-scala-js) , note:registration is required to view the video
+[Building a Secure Distributed Social Web using Scala & Scala-JS](http://skillsmatter.com/skillscasts/5960-building-a-secure-distributed-social-web-using-scala-scala-js) , note:registration is required to view the video
