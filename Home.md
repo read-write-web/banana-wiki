@@ -30,3 +30,7 @@ Documentation
 ### How it works
 
 [Core concepts](https://github.com/w3c/banana-rdf/wiki/Core-concepts)
+
+### Screencasts about banana-rdf
+
+[skillsmatter.com/skillscasts/5960-building-a-secure-distributed-social-web-using-scala-scala-js](Building a Secure Distributed Social Web using Scala & Scala-JS) , note:registration is required to view the video.
