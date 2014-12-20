@@ -66,6 +66,6 @@ Documentation
 
 [Core concepts](https://github.com/w3c/banana-rdf/wiki/Core-concepts)
 
-### Screencasts about banana-rdf
+### Videos about banana-rdf
 
-[Building a Secure Distributed Social Web using Scala & Scala-JS](http://skillsmatter.com/skillscasts/5960-building-a-secure-distributed-social-web-using-scala-scala-js) , note:registration is required to view the video
+Talk of @bbfish at Scala Exchange [Building a Secure Distributed Social Web using Scala & Scala-JS](http://skillsmatter.com/skillscasts/5960-building-a-secure-distributed-social-web-using-scala-scala-js) , note:registration is required to view the video
