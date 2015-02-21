@@ -1,4 +1,4 @@
-In rough chronological oder of starting date:
+In rough chronological order of starting date:
 
 * https://github.com/read-write-web/rww-play/
 * https://github.com/jmvanel/semantic_forms/tree/master/scala/forms_play, a quite generic Play! application to navigate the LOD and edit backed by a Jena TDB SPARQL base
