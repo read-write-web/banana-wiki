@@ -69,3 +69,7 @@ Documentation
 ### Videos about banana-rdf
 
 Talk of @bbfish at Scala Exchange [Building a Secure Distributed Social Web using Scala & Scala-JS](http://skillsmatter.com/skillscasts/5960-building-a-secure-distributed-social-web-using-scala-scala-js) , note:registration is required to view the video
+
+### Powered by Banana-RDF
+
+See [[Powered by Banana-RDF]]
