@@ -18,7 +18,7 @@ applications that use banana-rdf
 * [forms](https://github.com/jmvanel/semantic_forms/tree/master/scala/forms), a form generator with HTML rendering and RDF configuration, used by the preceding project
 * [corporate risk](https://github.com/jmvanel/corporate_risk), input forms and results management for corporate risk and immaterial capital evaluation; leveraging on semantic_forms
 
-## Companies
+## Companies & Projects
 
-### Cobusiness
-* http://www.cobusiness.fr/ a site about barter for professionals; not open source
+* [Shelley-Godwin Archive](http://mith.umd.edu/research/project/shelley-godwin-archive/) used banana-rdf according to [Travis Brown](/travisbrown)
+* [CoBusiness](http://www.cobusiness.fr/) a site about barter for professionals, according to [Jean Marc Vanel](/jmvanel)
