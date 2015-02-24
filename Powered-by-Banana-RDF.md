@@ -12,7 +12,7 @@ applications that use banana-rdf
 * [rww-play](https://github.com/read-write-web/rww-play/) a server implementing the [Linked Data Platform](http://www.w3.org/TR/ldp/) and using [WebID Authentication](http://webid.info/spec/)
 * [rww-scala-js](https://github.com/read-write-web/rww-scala-js) a scala-js browser application that consumes Linked Data and produces a User Interface
 
-### JMVanel
+### Web applications & UI
 
 * [forms play](https://github.com/jmvanel/semantic_forms/tree/master/scala/forms_play), a quite generic Play! application to navigate the LOD and edit backed by a Jena TDB SPARQL base
 * [forms](https://github.com/jmvanel/semantic_forms/tree/master/scala/forms), a form generator with HTML rendering and RDF configuration, used by the preceding project
