@@ -18,6 +18,10 @@ applications that use banana-rdf
 * [forms](https://github.com/jmvanel/semantic_forms/tree/master/scala/forms), a form generator with HTML rendering and RDF configuration, used by the preceding project
 * [corporate risk](https://github.com/jmvanel/corporate_risk), input forms and results management for corporate risk and immaterial capital evaluation; leveraging on semantic_forms
 
+## Data servers
+
+* [cityData](https://github.com/pixelhumain/cityData) a very simple REST read-only wrapper for a SPARQL embedded database: from e.g. HTTP GET /cities/fra/01600 , output JSON-LD for dbpedia:Reyrieux ?P ?O .
+
 ## Companies & Projects
 
 * [Shelley-Godwin Archive](http://mith.umd.edu/research/project/shelley-godwin-archive/) used banana-rdf according to [Travis Brown](/travisbrown)
