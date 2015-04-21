@@ -20,7 +20,8 @@ applications that use banana-rdf
 
 ## Data servers
 
-* [cityData](https://github.com/pixelhumain/cityData) a very simple REST read-only wrapper for a SPARQL embedded database: from e.g. HTTP GET /cities/fra/01600 , output JSON-LD for dbpedia:Reyrieux ?P ?O .
+* [cityData](https://github.com/pixelhumain/cityData) a very simple REST read-only wrapper for a SPARQL embedded database: from e.g. `HTTP GET /cities/fra/01600` , output JSON-LD for triples
+`dbpedia:Reyrieux ?P ?O .` . It is a simple example of a Play! application that is written database independent, with 2 concrete applications: 1) with Apache Jena TDB 2) with BlazeGraph (formerly BigData(R() )
 
 ## Companies & Projects
 
