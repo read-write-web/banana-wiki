@@ -31,7 +31,7 @@ Documentation
 
 [Core concepts](https://github.com/w3c/banana-rdf/wiki/Core-concepts)
 
-### Screencasts about banana-rdf
+### Overview of banana-rdf
 
 `banana-rdf` is a library for RDF, SPARQL and Linked Data technologies
 in Scala.
