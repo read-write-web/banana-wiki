@@ -68,7 +68,16 @@ Documentation
 
 ### Videos about banana-rdf
 
-Talk of @bbfish at Scala Exchange [Building a Secure Distributed Social Web using Scala & Scala-JS](http://skillsmatter.com/skillscasts/5960-building-a-secure-distributed-social-web-using-scala-scala-js) , note:registration is required to view the video
+Two presentations at Scala Conferences should help get you going.
+
+An overview of RDF and Linked Data its uses and some core concepts of banana-rdf were given at Scala-eXchange 2014.
+
+[![skillsmatter video: building a secure social web using scala and scala-js](https://cloud.githubusercontent.com/assets/124506/5917678/facf06b0-a61f-11e4-97fd-2457f26a46b2.png)](https://skillsmatter.com/skillscasts/5960-building-a-secure-distributed-social-web-using-scala-scala-js)
+
+Alexandre Bertails dug much deeper into the structure of banana-rdf at his talk at ScalaDays 2015 in San Francisco. 
+
+[![Interacting with the Web of data in Scala ](http://bblfish.net/tmp/2015/06/23/scaladaysSF2015.png)](https://www.parleys.com/tutorial/banana-rdf-interacting-web-data-scala)
+
 
 ### Powered by Banana-RDF
 
