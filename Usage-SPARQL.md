@@ -28,8 +28,9 @@ trait SPARQLExample extends SPARQLExampleDependencies { self =>
   import sparqlOps._
   import sparqlHttp.sparqlEngineSyntax._
 ```
-The implictis are taken from modules that we just inherited. Each of them allow some operations that we can do with RDF graph, RDF store or sparql endpoint. So, you can get the features that you need by mixin modules with appropriate implicits. 
-Note, that our code is generic right now as we did not inherit from any rdfstore implementations, all features that we get we get from implicits. The reason why we prefer implicits to inheritance is because implicits will be resolved from rdfstore implementation (i.e. Jena,Sesame,Plantain, etc) that we will mix later.
+The implicits are taken from modules that we just inherited. Each of them allow some operations that we can do with RDF graph, RDF store or sparql endpoint. So, you can get the features that you need by mixing modules with appropriate implicits.
+Note, that our code is generic right now as we did not inherit from any rdfstore implementations, all features that we get we get from implicits. The reason why we prefer implicits to inheritance is because implicits will be resolved from rdfstore implementation (i.e. Jena, Sesame, Plantain, etc) that we will mix later. To understand better how it is achieved and why there are so many operation traits and implicits you can read [core-concepts](https://github.com/banana-rdf/banana-rdf/wiki/Core-concepts) page.
+
 Let's define the main method of our example. There we will make a test select to dbpedia endpoint to fetch some linked data from Wikipedia and print the result.
 ```scala
   def main(args: Array[String]): Unit = {
