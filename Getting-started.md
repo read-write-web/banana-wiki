@@ -21,22 +21,13 @@ $ sbt +banana_jvm/test   # for jvm only
 IDE Setup
 =========
 
-`banana-rdf` works with both [eclipse](https://www.eclipse.org/) and [IntelliJ IDEA](http://www.jetbrains.com/idea/).
-
-global.sbt
-----------
-Independent of your preferred IDE, optionally the add the following line to `~/.sbt/0.13/global.sbt` to prevent the 
-generation of empty source directories:
-
-```
-    unmanagedSourceDirectories in Compile ~= { _.filter(_.exists) }
-```
+`banana-rdf` works with [eclipse](https://www.eclipse.org/) , [IntelliJ IDEA](http://www.jetbrains.com/idea/) and other IDEs.
 
 Eclipse
 -------
-Eclipse should work "out of the box" with the addition of the following global settings:
+Eclipse should work "out of the box" with the addition of the following global settings to global.sbt:
 
-In `~/.sbt/0.13/global.sbt`:
+In `~/.sbt/0.13/global.sbt` (global sbt location in Linux and MacOS, in Windows it is different):
 
 ```
     unmanagedSourceDirectories in Compile ~= { _.filter(_.exists) }
@@ -57,16 +48,4 @@ $ sbt eclipse
 IntelliJ IDEA
 -------------
 
-IntelliJ IDEA works with just one global change:
-
-In `~/.sbt/0.13/plugins/build.sbt`
-
-```
-    addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "1.6.0")
-```
-
-To generate IntelliJ project files, just run the command:
-
-``` bash
-$ sbt gen-idea
-```
+IntelliJ IDEA can open sbt projects directly. There is an annoying bug that in some cases it does not show all the subprojects after import ( to overcome this just go to SBT tool window and refresh the project). 
