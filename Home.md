@@ -22,9 +22,13 @@ Documentation
 
 [Making a SPARQL request](https://github.com/w3c/banana-rdf/wiki/Usage-SPARQL)
 
-[Reading and writing classes to RDF graph](https://github.com/w3c/banana-rdf/wiki/Usage-Binders)
-
 [Writing and reading RDF files](https://github.com/w3c/banana-rdf/wiki/Usage-IO)
+
+[Working with RDF graphs](https://github.com/w3c/banana-rdf/wiki/Usage-Diesel)
+
+[Reading and writing classes to RDF](https://github.com/w3c/banana-rdf/wiki/Usage-Binders)
+
+
 
 ### Hacking banana-rdf
 [Getting started](https://github.com/w3c/banana-rdf/wiki/Getting-started)
