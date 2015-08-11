@@ -10,9 +10,7 @@ When comparing tests of different underlying RDF implementations, like
 spot that there are only several lines of code there, so all tests (with a lot of complex stuff that is checked there) are defined in   generic abstract classes that have nothing to do with implementations!
   It reveals the core principle of BananaRDF: `once written, your code will work for all supported RDF libraries with only minor changes and you can switch easily whenever you want to or add your own implementation`.
 
-__NOTE: until we write thorough documentation, tests are the best place to understand__
-__what you can do and how [test__
-__suite](https://github.com/w3c/banana-rdf/tree/master/rdf-test-suite).__ 
+NOTE: until we write thorough documentation, tests are the best place to understand what you can do and how [test suite](https://github.com/w3c/banana-rdf/tree/master/rdf-test-suite).
 
 How was it possible to achieve this?  To add support of your own RDF library you just have to extend:
    [RDF trait](https://github.com/w3c/banana-rdf/blob/master/rdf/common/src/main/scala/org/w3/banana/RDF.scala) ,
