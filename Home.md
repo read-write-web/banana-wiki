@@ -18,18 +18,18 @@ Documentation
 
 [Main features](https://github.com/w3c/banana-rdf/wiki/Features)
 
-[Getting started](https://github.com/w3c/banana-rdf/wiki/Getting-started)
-
 ### Using banana-rdf
+
+[Core concepts](https://github.com/w3c/banana-rdf/wiki/Core-concepts)
 
 [Making a SPARQL request](https://github.com/w3c/banana-rdf/wiki/Usage-SPARQL)
 
+[Reading and writing classes to RDF graph](https://github.com/w3c/banana-rdf/wiki/Usage-Binders)
+
 [Writing and reading RDF files](https://github.com/w3c/banana-rdf/wiki/Usage-IO)
 
-
-### How it works
-
-[Core concepts](https://github.com/w3c/banana-rdf/wiki/Core-concepts)
+### Hacking banana-rdf
+[Getting started](https://github.com/w3c/banana-rdf/wiki/Getting-started)
 
 ### Videos 
 
