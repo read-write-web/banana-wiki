@@ -1,6 +1,6 @@
 Let's start from the simple example, making a query to remote endpoint. At first you have to include banana-rdf dependencies to your project. The code will be pretty much the same for all implementation, for the sake of simplicity let's try jena's one:
 ```
-libraryDependencies += "org.w3" %% "jena" % "0.8.1"
+libraryDependencies += "org.w3" %% "banana-jena" % "0.8.1"
 ```
 __Note: package names will change in a next version of banana-rdf.
 
