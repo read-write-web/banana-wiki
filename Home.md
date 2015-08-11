@@ -20,8 +20,6 @@ Documentation
 
 ### Using banana-rdf
 
-[Core concepts](https://github.com/w3c/banana-rdf/wiki/Core-concepts)
-
 [Making a SPARQL request](https://github.com/w3c/banana-rdf/wiki/Usage-SPARQL)
 
 [Reading and writing classes to RDF graph](https://github.com/w3c/banana-rdf/wiki/Usage-Binders)
@@ -30,6 +28,8 @@ Documentation
 
 ### Hacking banana-rdf
 [Getting started](https://github.com/w3c/banana-rdf/wiki/Getting-started)
+
+[Core concepts](https://github.com/w3c/banana-rdf/wiki/Core-concepts)
 
 ### Videos 
 
