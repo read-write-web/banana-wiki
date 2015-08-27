@@ -2,6 +2,7 @@
 
 Libraries that complement banana-rdf directly.
 
+* [scala-js-binding](https://github.com/antonkulaga/scala-js-binding): ScalaJS html binding library, uses banana-rdf to bind html properties to RDFGraph
 * [type provider examples](https://github.com/travisbrown/type-provider-examples): turns ontologies into 
 
 ## Applications
