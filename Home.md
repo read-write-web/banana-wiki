@@ -39,7 +39,7 @@ Documentation
 
 Two presentations at Scala Conferences should help get you going.
 
-An overview of RDF and Linked Data its uses and some core concepts of banana-rdf were given at Scala-eXchange 2014.
+An overview of RDF and Linked Data, its uses and some core concepts of banana-rdf were given at Scala-eXchange 2014 ([slides here in pdf](http://bblfish.net/tmp/2014/12/08/SecureSocialWeb-Scala_eXchange.pdf))
 
 [![skillsmatter video: building a secure social web using scala and scala-js](https://cloud.githubusercontent.com/assets/124506/5917678/facf06b0-a61f-11e4-97fd-2457f26a46b2.png)](https://skillsmatter.com/skillscasts/5960-building-a-secure-distributed-social-web-using-scala-scala-js)
 
