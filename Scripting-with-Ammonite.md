@@ -247,27 +247,33 @@ But it is not quite right. There are two problems both related to the various sy
 
 
 ```scala
+import scala.util.{Try,Success,Failure}
 def fetch(docUrl: Sesame#URI): HttpResponse[scala.util.Try[Sesame#Graph]] = {
   assert (docUrl == docUrl.fragmentLess)
   Http(docUrl.toString)
-    .header("Accept", "application/rdf+xml,text/turtle,text/n3;q=0.2")
+    .header("Accept", "application/rdf+xml,text/turtle,application/ld+json,text/n3;q=0.2")
     .exec { case (code, headers, is) =>
       headers.get("Content-Type")
              .flatMap(_.headOption)
-             .fold[Try[Sesame#Graph]](
+             .fold[Try[(io.RDFReader[Sesame, Try, _],String)]](
                    Failure(new java.lang.Exception("Missing Content Type"))
               ) { ct =>
         val ctype = ct.split(';')
         val parser = ctype(0).trim match {
-          case "text/turtle" => turtleReader
-          case "application/rdf+xml" => rdfXMLReader
-          case "application/n-triples" => ntriplesReader
-          case "application/ld+json" => jsonldReader
+          case "text/turtle" => Success(turtleReader)
+          case "application/rdf+xml" => Success(rdfXMLReader)
+          case "application/n-triples" => Success(ntriplesReader)
+          case "application/ld+json" => Success(jsonldReader)
+          case ct => Failure(new java.lang.Exception("Missing parser for "+ct))
         }
-        val attributes = ctype.toList.tail.flatMap(
+        parser.map{ p => 
+             val attributes = ctype.toList.tail.flatMap(
              _.split(',').map(_.split('=').toList.map(_.trim))
           ).map(avl => (avl.head, avl.tail.headOption.getOrElse(""))).toMap
-        val encoding = attributes.get("encoding").getOrElse("utf-8")
+          val encoding = attributes.get("encoding").getOrElse("utf-8")
+          (p, encoding)
+        }
+       } flatMap { case (parser,encoding) =>  
         parser.read(new java.io.InputStreamReader(is, encoding), docUrl.toString)
       }
     }
