@@ -1,4 +1,6 @@
-[Ammonite](http://ammonite.io/) is new Scala based shell, a typesafe replacement of bash, that makes scripting fun again. This wiki page collects some of the things one needs to get going with Ammonite and banana-rdf.  It hopefully will lead to improvements to banana-rdf to make working in ammonite easier. 
+[Ammonite](http://ammonite.io/) is new Scala based shell, a typesafe replacement of bash, that makes scripting fun again. In particular it should prove to be a great tool to get going, exploring the semantic web with banana-rdf, as if it were part of your file system, and getting to the point of writing some small initial scripts.
+
+ This wiki page collects some of the things one needs to get going with Ammonite and banana-rdf.  It hopefully will lead to improvements to banana-rdf to make working in Ammonite easier. 
 
 1) Download [Ammonite Shell](http://ammonite.io/#Ammonite-Shell) as described on their documentation page
   
@@ -108,7 +110,8 @@ henryDoc: HttpResponse[String] = HttpResponse(
 ```
 
 So now we have downloaded the Turtle, we just need to parse it into a graph and
-point onto a node to explore it. (The turtle parser is inherited by the ops defined in the sesame case
+point onto a node of the graph (a `PointedGraph`) to explore it. (The turtle parser 
+is inherited by the ops defined in the sesame case
 [in the SesameModule](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/sesame/src/main/scala/org/w3/banana/sesame/SesameModule.scala)
 
 ```scala
