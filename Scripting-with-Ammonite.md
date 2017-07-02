@@ -63,7 +63,7 @@ First let us load a simple Scala wrapper around the Java HTTP library,
 
 We can now start using banana-rdf on real data.
 
-```
+```scala
 > import scalaj.http._
 import scalaj.http._
 > val henryDocUrl = "http://bblfish.net/people/henry/card"
