@@ -96,7 +96,7 @@ _:betehess <http://xmlns.com/foaf/0.1/title> "Mr" ;
 Next we can explore the graph in a way that is somewhat reminiscent of OO programming,
 but with the dot `.` notation replaced with a `/` notation. As RDF relations when starting
 from a node are one to many, we receive not just one PointedGraph back but a sequence of them
-, which is what the (PointedGraphs)(https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf/shared/src/main/scala/org/w3/banana/PointedGraphs.scala) - notice the
+, which is what the [PointedGraphs](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf/shared/src/main/scala/org/w3/banana/PointedGraphs.scala) - notice the
 final 's' - is for.
 
 ```Scala
