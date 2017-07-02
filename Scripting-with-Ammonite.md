@@ -279,7 +279,8 @@ not that difficult. The code was written entirely in the Ammonite shell (and tha
 longest piece of code that makes sense to write there).
 
 ```scala
-> val bblfish = HttpResponse[Try[org.openrdf.model.Model]] = HttpResponse(
+> val bblgrph = fetch(URI("http://bblfish.net/people/henry/card"))
+bblgrph: HttpResponse[Try[org.openrdf.model.Model]] = HttpResponse(
   Success(
     [(http://axel.deri.ie/~axepol/foaf.rdf#me, http://www.w3.org/1999/02/22-rdf-syntax-ns#type, http://xmlns.com/foaf/0.1/Person) [null], 
      (http://axel.deri.ie/~axepol/foaf.rdf#me, http://xmlns.com/foaf/0.1/name, "Axel Polleres"^^<http://www.w3.org/2001/XMLSchema#string>) [null], ...
