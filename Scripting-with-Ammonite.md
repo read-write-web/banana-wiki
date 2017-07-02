@@ -2,6 +2,8 @@
 
  This wiki page collects some of the things one needs to get going with Ammonite and banana-rdf.  It hopefully will lead to improvements to banana-rdf to make working in Ammonite easier. 
 
+# Ammonite and Banana-RDF
+
 1) Download [Ammonite Shell](http://ammonite.io/#Ammonite-Shell) as described on their documentation page
   
    For Windows Users check [this blog post at blog.ssanj.net](http://blog.ssanj.net/posts/2016-02-24-running-ammonite-on-windows-with-conemu.html) and [Ammonite issue 119](https://github.com/lihaoyi/Ammonite/issues/119) and please report any success to us on the gitter channel and if possible a pointer to a howto for it.
@@ -30,6 +32,8 @@ those last imports will download a lot of libraries the first time round. Here w
 choosing to use the Sesame implementation of banana. You could use another one, such as
 Jena.
 
+# Constructing and querying RDF Graphs
+
 Next we are going to try building a graph, taking code from [the diesel example](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf-test-suite/shared/src/main/scala/org/w3/banana/diesel/DieselGraphConstructTest.scala) 
 
 ```scala
@@ -52,6 +56,8 @@ res15: PointedGraphs[Sesame] = PointedGraphs(org.w3.banana.PointedGraph$$anon$1@
 > res15.map( _.pointer )
 res17: Iterable[Sesame#Node] = List("Alexandre"@fr)
 ```
+
+# Working with Graphs on the Web
 
 Building our own graph and querying it is not very informative. 
 So let's try getting some information from the world wide web.
@@ -121,16 +127,50 @@ is inherited by the `ops` we imported earlier defined in the sesame case
 ...
 > val pg = PointedGraph[Sesame](URI(henryDocUrl+"#me"),hg.get)
 pg: PointedGraph[Sesame] = org.w3.banana.PointedGraph$$anon$1@6a39a42c
-> val k = pg/foaf.knows
-k: PointedGraphs[Sesame] = PointedGraphs(
+> val knows = pg/foaf.knows
+knows: PointedGraphs[Sesame] = PointedGraphs(
   org.w3.banana.PointedGraph$$anon$1@53dc5333,
   org.w3.banana.PointedGraph$$anon$1@787fdb85,
 ...
-> (k/foaf.name).map(_.pointer)
+> (knows/foaf.name).map(_.pointer)
 res45: Iterable[Sesame#Node] = List(
   "Axel Polleres"^^<http://www.w3.org/2001/XMLSchema#string>,
   "Christoph  Görn"^^<http://www.w3.org/2001/XMLSchema#string>,
 ...
 ```
 
+# Following links 
+
+## Purpose and method
+
+In my [Friend of a Friend](http://xmlns.com/foaf/spec/) profile, I keep the names of the
+people I know, so that if a link goes bad, I can remember who was at the end of the link,
+and also to allow user interfaces to give some information about what I was intending to link
+to, so as to allow immediate display without downloading more information.
+
+But most of the information is actually now in my profile - why after all should I keep my profile
+up to date about where my friends live, who their friends are, what their telephone number is, 
+where their blogs are located, etc.... If I did not share responsibility with others in keeping
+data up to date, I would soon have to maintain all the information in the world. 
+
+That is where linked data comes  in. The URLs used in the names of the relations and the names
+of the entities refer (directly and often indirectly via urls ending in #entities) to documents
+maintained by others - in this case the people I know. 
+
+So the next step is to follow links from one resource to another, download those documents, turn them
+into graphs, etc... We can do this if the pointers of the `PointedGraph` we named `knows` 
+are urls that don't belong to the original  document (ie are not #urls that belong to that document, 
+blank nodes or literals). Then for each such URL `url` having  downloaded the documents that those URLs point to, parsed them into a graph `g` and created a pointed graph `PointedGraph(url,g)` we can then continue
+exploring the data from that location. 
+
+In the above example we asked for the default representation of the `henryDocUrl` resource.
+As it happened it returned Turtle. But as we want to follow the `k/foaf.knows` links to other.
+
+Let us write this then as little scripts and see how far we get.
+
+## Fetching and parsing docs
+
+
+
+# Todo
 
