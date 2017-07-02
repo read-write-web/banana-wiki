@@ -108,7 +108,8 @@ henryDoc: HttpResponse[String] = HttpResponse(
 ```
 
 So now we have downloaded the Turtle, we just need to parse it into a graph and
-point onto a node to explore it. 
+point onto a node to explore it. (The turtle parser is inherited by the ops defined in the sesame case
+[in the SesameModule](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/sesame/src/main/scala/org/w3/banana/sesame/SesameModule.scala)
 
 ```scala
 > val hg = turtleReader.read(new java.io.StringReader(henryDoc.body), henryDocUrl)
