@@ -290,7 +290,7 @@ longest piece of code that makes sense to write there).
 As we will want to fetch a number of graphs by following the `foaf:knows` links, we would like to do
 this in parallel. 
 
-At this point the [`java.net.HttpURLConnection`](https://docs.oracle.com/javase/8/docs/api/java/net/HttpURLConnection.html) starts showing its age and limitations as it is a blocking call that holds onto a thread. But in order to avoid brining in too many other concepts at this point let us deal with this.
+At this point the [`java.net.HttpURLConnection`](https://docs.oracle.com/javase/8/docs/api/java/net/HttpURLConnection.html) starts showing its age and limitations as it is a blocking call that holds onto a thread. But in order to avoid brining in too many other concepts at this point let us deal with this the simple way, using threads and Futures.
 
 
 
