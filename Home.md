@@ -31,7 +31,10 @@ Documentation
 
 
 ### Hacking banana-rdf
+
 [Getting started](https://github.com/w3c/banana-rdf/wiki/Getting-started)
+
+[Getting started with Ammonite shell](https://github.com/banana-rdf/banana-rdf/wiki/Scripting-with-Ammonite)
 
 [Core concepts](https://github.com/w3c/banana-rdf/wiki/Core-concepts)
 
