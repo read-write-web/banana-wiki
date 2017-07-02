@@ -180,7 +180,7 @@ res45: Iterable[Sesame#Node] = List(
 
 In the [Friend of a Friend](http://xmlns.com/foaf/spec/) profile we [downloaded above](http://bblfish.net/people/henry/card), Henry keeps the names of the
 people he knows, so that 
- * if a link goes bad, he can remember who was at the end of the link
+ * if a link goes bad, he can remember who he intended the link to refer to (in order to fix it if possible)
  * to allow user interfaces to immediately give some information about what he was intending to link to
 to, without having to downloading more information.
 
@@ -206,6 +206,29 @@ Let us write this then as little scripts and see how far we get.
 
 ## Fetching and parsing docs
 
+So first of all we'd like to have one simple function that takes a URL and returns the pointed graph of that URL if successful, or some explanation of what went wrong.
+
+A little bit of playing around and we arrive at this function, that nicely
+gives us all the information we need:
+
+```scala
+> def fetch(point: Sesame#URI):  HttpResponse[scala.util.Try[PointedGraph[Sesame]]] = {
+          val docUrl = point.fragmentLess.toString
+          Http(docUrl).execute{ is =>
+             turtleReader.read(is,point.fragmentLess.toString)
+                   .map{ g => PointedGraph[Sesame](point,g) }
+          }
+         }
+defined function fetch
+```
+
+It keeps all the headers that we received, which may be useful for the extra information they contain, it gives us the content transformed into a pointed graph or an error in case of parsing errors.
+
+But it is not quite right. There are two problems both related to the various syntaxes that RDF can be published in:
+
+1. As we follow links on the web we would like to tell the server we come accross what types of mime types we understand so we increase the likeleyhood that it sends one we can parse. For sesame [we currently can parse](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/sesame/src/main/scala/org/w3/banana/sesame/SesameModule.scala) the following syntaxes for RDF: [RDF/XML](https://www.w3.org/TR/rdf-syntax-grammar/) popular in the early 2000s when XML was popular, [NTriples](https://www.w3.org/TR/n-triples/) the easiest to parse, [Turtle](https://www.w3.org/TR/turtle/) the easiest to read, [json-ld](https://json-ld.org/) popular because of it's encoding in JSON.
+
+2. When we receive the response we need to select the parser given the mime type of the document returned by the server.
 
 
 # Todo
