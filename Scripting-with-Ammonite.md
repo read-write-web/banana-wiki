@@ -45,12 +45,12 @@ Next we are going to try building a graph, taking code from [the diesel example]
 
 > import ops._
 
-val pg: PointedGraph[Sesame] = (
+val alex: PointedGraph[Sesame] = (
                bnode("betehess")
                -- foaf.name ->- "Alexandre".lang("fr")
                -- foaf.title ->- "Mr"
              )
-pg: PointedGraph[Sesame] = org.w3.banana.PointedGraph$$anon$1@21e9fd9e
+alex: PointedGraph[Sesame] = org.w3.banana.PointedGraph$$anon$1@21e9fd9e
 ```
 
 This pointed graph has as subject a blank node internally named "betehess" which has 
@@ -61,7 +61,7 @@ We can output that graph consisting of two triples in what is conceptually
 the simplest of all RDF formats: [NTriples](https://www.w3.org/TR/n-triples/].
 
 ```Scala
-> ntriplesWriter.asString(pg.graph,"")
+> ntriplesWriter.asString(alex.graph,"")
 res49: scala.util.Try[String] = Success(
   """_:betehess <http://xmlns.com/foaf/0.1/title> "Mr"^^<http://www.w3.org/2001/XMLSchema#string> .
 _:betehess <http://xmlns.com/foaf/0.1/name> "Alexandre"@fr ."""
@@ -72,7 +72,7 @@ The easiest format to write is the above mentioned [Turtle](https://www.w3.org/T
 and you can see how the output here is somewhat similar to the Diesel banana-rdf DSL.
 
 ```Scala
- turtleWriter.asString(pg.graph,"")
+ turtleWriter.asString(alex.graph,"")
 res50: scala.util.Try[String] = Success(
   """
 _:betehess <http://xmlns.com/foaf/0.1/title> "Mr" ;
@@ -81,8 +81,11 @@ _:betehess <http://xmlns.com/foaf/0.1/title> "Mr" ;
 )
 ```
 
+Next we can explore the graph in a way that is somewhat reminiscent of OO programming,
+but with the dot `.` notation replaced with a `/` notation.
 
-> pg/foaf.name
+```Scala
+> alex/foaf.name
 res15: PointedGraphs[Sesame] = PointedGraphs(org.w3.banana.PointedGraph$$anon$1@432f1d0a)
 
 > res15.map( _.pointer )
