@@ -230,6 +230,57 @@ But it is not quite right. There are two problems both related to the various sy
 
 2. When we receive the response we need to select the parser given the mime type of the document returned by the server.
 
+```scala
+def fetch(point: Sesame#URI): HttpResponse[scala.util.Try[PointedGraph[Sesame]]] = {
+  val docUrl = point.fragmentLess.toString
+  Http(docUrl)
+    .header("Accept", "application/rdf+xml,text/turtle,text/n3;q=0.2")
+    .exec { case (code, headers, is) =>
+      headers.get("Content-Type").flatMap(_.headOption).fold[Try[PointedGraph[Sesame]]](Failure(new java.lang.Exception("Missing Content Type"))) { ct =>
+        val ctype = ct.split(';')
+        val parser = ctype(0).trim match {
+          case "text/turtle" => turtleReader
+          case "application/rdf+xml" => rdfXMLReader
+          case "application/n-triples" => ntriplesReader
+          case "application/ld+json" => jsonldReader
+        }
+        val attributes = ctype.toList.tail.flatMap(_.split(',').map(_.split('=').toList.map(_.trim))
+        ).map(avl => (avl.head, avl.tail.headOption.getOrElse(""))).toMap
+        val encoding = attributes.get("encoding").getOrElse("utf-8")
+        parser.read(new java.io.InputStreamReader(is, encoding), point.fragmentLess.toString)
+          .map { g => PointedGraph[Sesame](point, g) }
+      }
+    }
+}
+```
+
+The above functions shows that dealing with the mime types is a little tricky perhaps, but
+not that difficult. The code was written entirely in the Ammonite shell (and that is perhaps the
+longest piece of code that makes sense to write there).
+
+```scala
+> val bblfish = fetch(URI("http://bblfish.net/people/henry/card#me"))
+bblfish: HttpResponse[Try[PointedGraph[Sesame]]] = HttpResponse(
+  Success(org.w3.banana.PointedGraph$$anon$1@71697aa2),
+  200,
+  Map(
+    "Accept-Ranges" -> Vector("bytes"),
+    "Access-Control-Allow-Headers" -> Vector("Origin, X-Requested-With, Content-Type, Accept"),
+    "Access-Control-Allow-Origin" -> Vector("*"),
+    "Connection" -> Vector("Keep-Alive"),
+    "Content-Length" -> Vector("17508"),
+    "Content-Location" -> Vector("card.ttl"),
+    "Content-Type" -> Vector("text/turtle; charset=utf-8"),
+    "Date" -> Vector("Sun, 02 Jul 2017 14:37:25 GMT"),
+    "ETag" -> Vector("\"4464-52f5cde585f9e;52f5cde5e7ae3\""),
+    "Keep-Alive" -> Vector("timeout=5, max=100"),
+    "Last-Modified" -> Vector("Thu, 31 Mar 2016 18:59:57 GMT"),
+    "Server" -> Vector("Apache/2.4.12 (Unix)"),
+    "Status" -> Vector("HTTP/1.1 200 OK"),
+...
+```
+ 
+
 
 # Todo
 
