@@ -143,19 +143,20 @@ res45: Iterable[Sesame#Node] = List(
 
 ## Purpose and method
 
-In my [Friend of a Friend](http://xmlns.com/foaf/spec/) profile, I keep the names of the
-people I know, so that if a link goes bad, I can remember who was at the end of the link,
-and also to allow user interfaces to give some information about what I was intending to link
-to, so as to allow immediate display without downloading more information.
+In the [Friend of a Friend](http://xmlns.com/foaf/spec/) profile we [downloaded above](http://bblfish.net/people/henry/card), Henry keeps the names of the
+people he knows, so that 
+ * if a link goes bad, he can remember who was at the end of the link
+ * to allow user interfaces to immediately give some information about what he was intending to link to
+to, without having to downloading more information.
 
-But most of the information is actually now in my profile - why after all should I keep my profile
-up to date about where my friends live, who their friends are, what their telephone number is, 
-where their blogs are located, etc.... If I did not share responsibility with others in keeping
-data up to date, I would soon have to maintain all the information in the world. 
+But most of the information is actually not in his profile - why after all should he keep his profile
+up to date about where his friends live, who their friends are, what their telephone number is, 
+where their blogs are located, etc.... If he did not share responsibility with others in keeping
+data up to date, he would soon have to maintain all the information in the world. 
 
-That is where linked data comes  in. The URLs used in the names of the relations and the names
-of the entities refer (directly and often indirectly via urls ending in #entities) to documents
-maintained by others - in this case the people I know. 
+That is where linked data comes  in: it allows different people and organisations to share the burden of maintaining information. The URLs used in the names of the relations and the names
+of the subjects and objects refer (directly and often indirectly via urls ending in #entities) to documents
+maintained by others - in this case the people Henry knows. 
 
 So the next step is to follow links from one resource to another, download those documents, turn them
 into graphs, etc... We can do this if the pointers of the `PointedGraph` we named `knows` 
@@ -164,7 +165,7 @@ blank nodes or literals). Then for each such URL `url` having  downloaded the do
 exploring the data from that location. 
 
 In the above example we asked for the default representation of the `henryDocUrl` resource.
-As it happened it returned Turtle. But as we want to follow the `k/foaf.knows` links to other.
+As it happened it returned Turtle. But as we want to follow the `knows/foaf.knows` links to other.
 
 Let us write this then as little scripts and see how far we get.
 
