@@ -20,6 +20,8 @@ Documentation
 
 ### Using banana-rdf
 
+[Scripting RDF with the Ammonite shell](https://github.com/banana-rdf/banana-rdf/wiki/Scripting-with-Ammonite)
+
 [Making a SPARQL request](https://github.com/w3c/banana-rdf/wiki/Usage-SPARQL)
 
 [Writing and reading RDF files](https://github.com/w3c/banana-rdf/wiki/Usage-IO)
@@ -29,12 +31,9 @@ Documentation
 [Reading and writing classes to RDF](https://github.com/w3c/banana-rdf/wiki/Usage-Binders)
 
 
-
 ### Hacking banana-rdf
 
 [Getting started](https://github.com/w3c/banana-rdf/wiki/Getting-started)
-
-[Getting started with Ammonite shell](https://github.com/banana-rdf/banana-rdf/wiki/Scripting-with-Ammonite)
 
 [Core concepts](https://github.com/w3c/banana-rdf/wiki/Core-concepts)
 
