@@ -72,7 +72,7 @@ The easiest format to write is the above mentioned [Turtle](https://www.w3.org/T
 and you can see how the output here is somewhat similar to the Diesel banana-rdf DSL.
 
 ```Scala
- turtleWriter.asString(alex.graph,"")
+> turtleWriter.asString(alex.graph,"")
 res50: scala.util.Try[String] = Success(
   """
 _:betehess <http://xmlns.com/foaf/0.1/title> "Mr" ;
