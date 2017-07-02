@@ -47,7 +47,86 @@ g: PointedGraph[Sesame] = org.w3.banana.PointedGraph$$anon$1@21e9fd9e
 > g/foaf.name
 res15: PointedGraphs[Sesame] = PointedGraphs(org.w3.banana.PointedGraph$$anon$1@432f1d0a)
 
-> res15.toSet.map{ pg: PointedGraph[Sesame] => pg.pointer }
-res17: Set[Sesame#Node] = Set("Alexandre"@fr)
+> res15.map( _.pointer )
+res17: Iterable[Sesame#Node] = List("Alexandre"@fr)
 ```
+
+Building our own graph and querying it is not very informative. 
+So let's try getting some information from the world wide web.
+
+First let us load a simple Scala wrapper around the Java HTTP library,
+[scalaj-http](https://github.com/scalaj/scalaj-http).
+
+```scala
+> interp.load.ivy("org.scalaj" %% "scalaj-http" % "2.3.0")
+```
+
+We can now start using banana-rdf on real data.
+
+```
+> import scalaj.http._
+import scalaj.http._
+> val henryDocUrl = "http://bblfish.net/people/henry/card"
+henryDocUrl: String = "http://bblfish.net/people/henry/card
+>  val henryDocReq = Http(henryDocUrl)
+henryDoc: HttpRequest = HttpRequest(
+  "http://bblfish.net/people/henry/card",
+  "GET",
+  DefaultConnectFunc,
+  List(),
+  List(("User-Agent", "scalaj-http/1.0")),
+  List(
+    scalaj.http.HttpOptions$$$Lambda$112/836829272@2cfc7cdf,
+    scalaj.http.HttpOptions$$$Lambda$113/414197855@29a76f28,
+    scalaj.http.HttpOptions$$$Lambda$114/1232880785@40ad74ca
+  ),
+  None,
+  "UTF-8",
+  4096,
+  QueryStringUrlFunc,
+  true
+)
+> val henryDoc = henryDocReq.asString
+henryDoc: HttpResponse[String] = HttpResponse(
+  """@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix : <http://xmlns.com/foaf/0.1/> .
+@prefix cert: <http://www.w3.org/ns/auth/cert#> .
+@prefix contact: <http://www.w3.org/2000/10/swap/pim/contact#> .
+@prefix iana: <http://www.iana.org/assignments/relation/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix pingback: <http://purl.org/net/pingback/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix space: <http://www.w3.org/ns/pim/space#> .
+
+<http://axel.deri.ie/~axepol/foaf.rdf#me>
+    a :Person ;
+    :name "Axel Polleres" .
+
+<http://b4mad.net/FOAF/goern.rdf#goern>
+    a :Person ;
+...
+```
+
+So now we have downloaded the Turtle, we just need to parse it into a graph and
+point onto a node to explore it. 
+
+```scala
+> val hg = turtleReader.read(new java.io.StringReader(henryDoc.body), henryDocUrl)
+ hg: scala.util.Try[Sesame#Graph] = Success(
+  [(http://axel.deri.ie/~axepol/foaf.rdf#me, http://www.w3.org/1999/02/22-rdf-syntax-ns#type, http://xmlns.com/foaf/0.1/Person) [null], (http://axel.deri.ie/~axepol/foaf.rdf#me, http://xmlns.com/foaf/0.1/name, "Axel Polleres"^^<http://www.w3.org/2001/XMLSchema#string>) [null],
+...
+> val pg = PointedGraph[Sesame](URI(henryDocUrl+"#me"),hg.get)
+pg: PointedGraph[Sesame] = org.w3.banana.PointedGraph$$anon$1@6a39a42c
+> val k = pg/foaf.knows
+k: PointedGraphs[Sesame] = PointedGraphs(
+  org.w3.banana.PointedGraph$$anon$1@53dc5333,
+  org.w3.banana.PointedGraph$$anon$1@787fdb85,
+...
+> (k/foaf.name).map(_.pointer)
+res45: Iterable[Sesame#Node] = List(
+  "Axel Polleres"^^<http://www.w3.org/2001/XMLSchema#string>,
+  "Christoph  Görn"^^<http://www.w3.org/2001/XMLSchema#string>,
+...
+```
+
 
