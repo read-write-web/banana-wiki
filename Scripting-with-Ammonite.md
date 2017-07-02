@@ -62,6 +62,9 @@ completely.
 alex: PointedGraph[Sesame] = org.w3.banana.PointedGraph$$anon$1@21e9fd9e
 ```
 
+This Domain Specific Language (DSL) produces a [PointedGraph](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf/shared/src/main/scala/org/w3/banana/PointedGraph.scala) which is just
+a graph and a pointer into the graph.
+
 This pointed graph has as subject a blank node internally named "betehess" which has 
 two relations `foaf.knows` and `foaf.title` to literals. The syntax is meant
 to be somewhat reminiscent of the [Turtle](https://www.w3.org/TR/turtle/) format.
@@ -91,7 +94,10 @@ _:betehess <http://xmlns.com/foaf/0.1/title> "Mr" ;
 ```
 
 Next we can explore the graph in a way that is somewhat reminiscent of OO programming,
-but with the dot `.` notation replaced with a `/` notation.
+but with the dot `.` notation replaced with a `/` notation. As RDF relations when starting
+from a node are one to many, we receive not just one PointedGraph back but a sequence of them
+, which is what the (PointedGraphs)(https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf/shared/src/main/scala/org/w3/banana/PointedGraphs.scala) - notice the
+final 's' - is for.
 
 ```Scala
 > alex/foaf.name
