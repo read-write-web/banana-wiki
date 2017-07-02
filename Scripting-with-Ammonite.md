@@ -34,7 +34,8 @@ Jena.
 
 # Constructing and querying RDF Graphs
 
-Next we are going to try building a graph, taking code from [the diesel example](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf-test-suite/shared/src/main/scala/org/w3/banana/diesel/DieselGraphConstructTest.scala) 
+Next we are going to try building a graph, taking code from [the diesel example](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf-test-suite/shared/src/main/scala/org/w3/banana/diesel/DieselGraphConstructTest.scala). First we import
+the classes and functions we need.
 
 ```scala
 > import org.w3.banana._
@@ -44,8 +45,16 @@ Next we are going to try building a graph, taking code from [the diesel example]
 > import org.w3.banana.sesame.Sesame.ops
 
 > import ops._
+```
 
-val alex: PointedGraph[Sesame] = (
+Then we import the [foaf ontology](http://xmlns.com/foaf/0.1/) identifiers that
+are predefined for us in the [banana prefix file](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf/shared/src/main/scala/org/w3/banana/Prefix.scala) as they
+are so useful in examples. This makes a lot easier to read than having to write URIs out
+completely.
+
+```scala
+> val foaf = FOAFPrefix[Sesame]
+> val alex: PointedGraph[Sesame] = (
                bnode("betehess")
                -- foaf.name ->- "Alexandre".lang("fr")
                -- foaf.title ->- "Mr"
@@ -58,7 +67,7 @@ two relations `foaf.knows` and `foaf.title` to literals. The syntax is meant
 to be somewhat reminiscent of the [Turtle](https://www.w3.org/TR/turtle/) format.
 
 We can output that graph consisting of two triples in what is conceptually
-the simplest of all RDF formats: [NTriples](https://www.w3.org/TR/n-triples/].
+the simplest of all RDF formats: [NTriples](https://www.w3.org/TR/n-triples/).
 
 ```Scala
 > ntriplesWriter.asString(alex.graph,"")
