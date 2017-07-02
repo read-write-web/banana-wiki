@@ -245,13 +245,18 @@ But it is not quite right. There are two problems both related to the various sy
 
 2. When we receive the response we need to select the parser given the mime type of the document returned by the server.
 
+
 ```scala
-def fetch(point: Sesame#URI): HttpResponse[scala.util.Try[PointedGraph[Sesame]]] = {
-  val docUrl = point.fragmentLess.toString
-  Http(docUrl)
+def fetch(docUrl: Sesame#URI): HttpResponse[scala.util.Try[Sesame#Graph]] = {
+  assert (docUrl == docUrl.fragmentLess)
+  Http(docUrl.toString)
     .header("Accept", "application/rdf+xml,text/turtle,text/n3;q=0.2")
     .exec { case (code, headers, is) =>
-      headers.get("Content-Type").flatMap(_.headOption).fold[Try[PointedGraph[Sesame]]](Failure(new java.lang.Exception("Missing Content Type"))) { ct =>
+      headers.get("Content-Type")
+             .flatMap(_.headOption)
+             .fold[Try[Sesame#Graph]](
+                   Failure(new java.lang.Exception("Missing Content Type"))
+              ) { ct =>
         val ctype = ct.split(';')
         val parser = ctype(0).trim match {
           case "text/turtle" => turtleReader
@@ -259,11 +264,11 @@ def fetch(point: Sesame#URI): HttpResponse[scala.util.Try[PointedGraph[Sesame]]]
           case "application/n-triples" => ntriplesReader
           case "application/ld+json" => jsonldReader
         }
-        val attributes = ctype.toList.tail.flatMap(_.split(',').map(_.split('=').toList.map(_.trim))
-        ).map(avl => (avl.head, avl.tail.headOption.getOrElse(""))).toMap
+        val attributes = ctype.toList.tail.flatMap(
+             _.split(',').map(_.split('=').toList.map(_.trim))
+          ).map(avl => (avl.head, avl.tail.headOption.getOrElse(""))).toMap
         val encoding = attributes.get("encoding").getOrElse("utf-8")
-        parser.read(new java.io.InputStreamReader(is, encoding), point.fragmentLess.toString)
-          .map { g => PointedGraph[Sesame](point, g) }
+        parser.read(new java.io.InputStreamReader(is, encoding), docUrl.toString)
       }
     }
 }
@@ -274,27 +279,19 @@ not that difficult. The code was written entirely in the Ammonite shell (and tha
 longest piece of code that makes sense to write there).
 
 ```scala
-> val bblfish = fetch(URI("http://bblfish.net/people/henry/card#me"))
-bblfish: HttpResponse[Try[PointedGraph[Sesame]]] = HttpResponse(
-  Success(org.w3.banana.PointedGraph$$anon$1@71697aa2),
-  200,
-  Map(
-    "Accept-Ranges" -> Vector("bytes"),
-    "Access-Control-Allow-Headers" -> Vector("Origin, X-Requested-With, Content-Type, Accept"),
-    "Access-Control-Allow-Origin" -> Vector("*"),
-    "Connection" -> Vector("Keep-Alive"),
-    "Content-Length" -> Vector("17508"),
-    "Content-Location" -> Vector("card.ttl"),
-    "Content-Type" -> Vector("text/turtle; charset=utf-8"),
-    "Date" -> Vector("Sun, 02 Jul 2017 14:37:25 GMT"),
-    "ETag" -> Vector("\"4464-52f5cde585f9e;52f5cde5e7ae3\""),
-    "Keep-Alive" -> Vector("timeout=5, max=100"),
-    "Last-Modified" -> Vector("Thu, 31 Mar 2016 18:59:57 GMT"),
-    "Server" -> Vector("Apache/2.4.12 (Unix)"),
-    "Status" -> Vector("HTTP/1.1 200 OK"),
-...
+> val bblfish = HttpResponse[Try[org.openrdf.model.Model]] = HttpResponse(
+  Success(
+    [(http://axel.deri.ie/~axepol/foaf.rdf#me, http://www.w3.org/1999/02/22-rdf-syntax-ns#type, http://xmlns.com/foaf/0.1/Person) [null], 
+     (http://axel.deri.ie/~axepol/foaf.rdf#me, http://xmlns.com/foaf/0.1/name, "Axel Polleres"^^<http://www.w3.org/2001/XMLSchema#string>) [null], ...
 ```
- 
+
+# Efficiency improvements: Asynchrony and Caching
+
+As we will want to fetch a number of graphs by following the `foaf:knows` links, we would like to do
+this in parallel. 
+
+At this point the [`java.net.HttpURLConnection`](https://docs.oracle.com/javase/8/docs/api/java/net/HttpURLConnection.html) starts showing its age and limitations as it is a blocking call that holds onto a thread. But in order to avoid brining in too many other concepts at this point let us deal with this.
+
 
 
 # Todo
