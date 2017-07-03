@@ -20,9 +20,10 @@ specific to your environment:
   "http://bblfish.net/work/repo/snapshots/"
   ))
 
+/** these are not needed as I think they are imported by the next command
 > import $ivy.`org.w3::banana:0.8.4-SNAPSHOT`
-
 > import $ivy.`org.w3::banana-rdf:0.8.4-SNAPSHOT`
+*/
 
 > import $ivy.`org.w3::banana-sesame:0.8.4-SNAPSHOT`
 
@@ -39,11 +40,9 @@ the classes and functions we need.
 
 ```Scala
 > import org.w3.banana._
-
 > import org.w3.banana.syntax._
-
-> import org.w3.banana.sesame.Sesame.ops
-
+> import org.w3.banana.sesame.Sesame
+> import Sesame.ops
 > import ops._
 ```
 
