@@ -328,6 +328,8 @@ It would be easy to create a more battle proof cache with [`java.util.concurrent
 case class HttpException(docURL: Sesame#URI, code: Int, headers: Map[String, IndexedSeq[String]]) extends java.lang.Exception
 case class ParseException(docURL: Sesame#URI, parseException: java.lang.Throwable) extends java.lang.Exception
 
+
+
 class Cache(implicit val ex: ExecutionContext) {
    import scala.collection.mutable.Map
    val db = Map[Sesame#URI, Future[HttpResponse[Try[Sesame#Graph]]]]()
@@ -354,15 +356,16 @@ class Cache(implicit val ex: ExecutionContext) {
         }
      }
 
-    case class PointedGraphWeb(webDocURL: Sesame#URI,
+  case class PointedGraphWeb(webDocURL: Sesame#URI,
                            pointedGraph: PointedGraph[Sesame],
                            headers: scala.collection.immutable.Map[String,IndexedSeq[String]]) {
-        def jump(rel: Sesame#URI)(implicit cache: Cache): Seq[Future[PointedGraphWeb]] =
+        def jump(rel: Sesame#URI): Seq[Future[PointedGraphWeb]] =
           (pointedGraph/rel).toSeq.map{ pg =>
-              if (pg.pointer.isURI) cache.getPointed(pg.pointer.asInstanceOf[Sesame#URI])
-              else Future.successful(PointedGraphWeb.this.copy(pointedGraph=PointedGraph[Sesame](pg.pointer, pointedGraph.graph)))
+              if (pg.pointer.isURI) Cache.this.getPointed(pg.pointer.asInstanceOf[Sesame#URI])
+              else Future.successful(this.copy(pointedGraph=PointedGraph[Sesame](pg.pointer, pointedGraph.graph)))
        }
     }
+  }
 }
 ```
 
@@ -383,17 +386,52 @@ a little we get:
 @ bblFuture.isCompleted
 res165: Boolean = true
 ```
-And as you see if we call the cache again there is no delay: it returns the previously cached Future,
-which is now completed.
+
+Good! so we can use the above now to follow the links.
 
 ```
-@ cache.get(URI("http://bblfish.net/people/henry/card#me"))
-res166: Future[HttpResponse[Try[org.openrdf.model.Model]]] = Future(Success(HttpResponse(Success([(http://axel.deri.ie/~axepol/foaf.rdf#me, http://www.w3.org/1999/02/22-rdf-syntax-ns#type, http://xmlns.com/foaf/0.1/Person) [null], 
-(http://axel.deri.ie/~axepol/foaf.rdf#me, http://xmlns.com/foaf/0.1/name, "Axel Polleres"^^<http://www.w3.org/2001/XMLSchema#string>) [null], 
-(http://b4mad.net/FOAF/goern.rdf#goern, http://www.w3.org/1999/02/22-rdf-syntax-ns#type, ...))]))))
+@ val bblFoafs = bblFuture.value.get.get.jump(foaf.knows)
+res27: Seq[Future[cache.PointedGraphWeb]] = Stream(
+  Future(<not completed>),
+  Future(<not completed>),
+  Future(<not completed>),
+  ...)
+```
+(There are clearly more elegant ways to unwrap a Future...)
+
+If a little later we try again we will see that more and more of the futures are completed,
+we can the start looking at the results to see what the problems with the links may be:
+
+```Scala
+@ val finished = bblFoafs.map(_.value).filter(! _.isEmpty).toList.size
+finished: Int = 74
+@ val successful = bblFoafs.map(_.value).filter(optRes =>  !optRes.isEmpty && optRes.get.isSuccess)
+successful: Seq[Option[Try[cache.PointedGraphWeb]]] = Stream(
+  Some(
+    Success(
+      PointedGraphWeb(
+        http://crschmidt.net/foaf.rdf,
+        org.w3.banana.PointedGraph$$anon$1@6fd7afad,
+     ...)))
+@val failure = bblFoafs.map(_.value).filter(optRes =>  !optRes.isEmpty && optRes.get.isFailure)
+failure: Seq[Option[Try[cache.PointedGraphWeb]]] = Stream(
+  Some(
+    Failure(
+      HttpException(
+        http://axel.deri.ie/~axepol/foaf.rdf#me,
+        302,...))))
+@ successful.size
+res38: Int = 25
+@ failure.size
+res39: Int = 49
 ```
 
-Good so we can use the above now to follow the links.
+So it looks like we have quite a lot of failures. That may well
+be. Henry has not had a tool to verify his foaf profile before,
+so he has not been able to keep his profile fresh. 
+
+With these tool we can see that we are well on our way to making 
+this much easier, and well on our way to start automating it...
 
 
 # Todo
