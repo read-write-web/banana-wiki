@@ -315,6 +315,7 @@ So first of all we need an execution context. We don't want to use the `scala.co
 default one, as we may easily create a lot of threads. So we create our own. (Remember we can later take this code and turn it into a script that we can import in one go.)
 
 ```Scala
+import scala.concurrent.Future
 import java.util.concurrent.ThreadPoolExecutor
 val threadPooleExec = new ThreadPoolExecutor(2,50,20,java.util.concurrent.TimeUnit.SECONDS,new java.util.concurrent.LinkedBlockingQueue[Runnable])
 implicit lazy val webcontext = ExecutionContext.fromExecutor(threadPooleExec,err=>System.out.println("web error: "+err))
