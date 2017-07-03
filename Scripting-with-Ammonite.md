@@ -6,12 +6,13 @@
 
 1) Download [Ammonite Shell](http://ammonite.io/#Ammonite-Shell) as described on their documentation page
   
-   For Windows Users check [this blog post at blog.ssanj.net](http://blog.ssanj.net/posts/2016-02-24-running-ammonite-on-windows-with-conemu.html) and [Ammonite issue 119](https://github.com/lihaoyi/Ammonite/issues/119) and please report any success to us on the gitter channel and if possible a pointer to a howto for it.
+   For Windows Users check [Ammonite issue 119](https://github.com/lihaoyi/Ammonite/issues/119) and please report any success to us on the gitter channel and if possible a pointer to a howto for it. There are reports that it works well with the latest versions of [Windows 10 Subsystem for Linux](https://en.wikipedia.org/wiki/Windows_Subsystem_for_Linux) that supports Ubuntu 16.04.
 
 2) start Ammonite 
 
 3) run the following at the `@` command prompt, which will be
-specific to your environment:
+specific to your environment. I have removed the `@` prompt from
+may of these examples to make copy and pasting a bit easier.
 
 ```Scala
 import coursier.core.Authentication, coursier.MavenRepository
@@ -49,10 +50,12 @@ import ops._
 Then we import the [foaf ontology](http://xmlns.com/foaf/0.1/) identifiers that
 are predefined for us in the [banana prefix file](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf/shared/src/main/scala/org/w3/banana/Prefix.scala) as they
 are so useful in examples. This makes a lot easier to read than having to write URIs out
-completely.
+completely. (here to show the interactive side I have left the `@` prompt in, and the response
+from running the code)
 
 ```Scala
 @ val foaf = FOAFPrefix[Sesame]
+foaf: FOAFPrefix[Sesame] = Prefix(foaf)
 @ val alex: PointedGraph[Sesame] = (
                bnode("betehess")
                -- foaf.name ->- "Alexandre".lang("fr")
@@ -70,6 +73,8 @@ to be somewhat reminiscent of the [Turtle](https://www.w3.org/TR/turtle/) format
 
 We can output that graph consisting of two triples in what is conceptually
 the simplest of all RDF formats: [NTriples](https://www.w3.org/TR/n-triples/).
+(Again here the output is important. The line to type in is the first one following the `@`
+prompt)
 
 ```Scala
 @ ntriplesWriter.asString(alex.graph,"")
@@ -302,8 +307,67 @@ bblgrph: HttpResponse[Try[org.openrdf.model.Model]] = HttpResponse(
 As we will want to fetch a number of graphs by following the `foaf:knows` links, we would like to do
 this in parallel. 
 
-At this point the [`java.net.HttpURLConnection`](https://docs.oracle.com/javase/8/docs/api/java/net/HttpURLConnection.html) starts showing its age and limitations as it is a blocking call that holds onto a thread. But in order to avoid brining in too many other concepts at this point let us deal with this the simple way, using threads and Futures.
+At this point the [`java.net.HttpURLConnection`](https://docs.oracle.com/javase/8/docs/api/java/net/HttpURLConnection.html) starts showing its age and limitations as it is a blocking call that holds onto a thread. And threads are expensive: over half a MB each. This may not sound like a lot but if you want to open 1000 threads simultaneously you would end up using up half a Gigabyte just in thead overhead, and your system would become very slow as the Virtual Machien will keeep jumping through 1000 threads just waiting to see if any one of them has something to parse, where most of the time they won't - as internet connecitons are close to 1 billion times slower than fetching information from an internal CPU cache.
 
+But in order to avoid brining in too many other concepts at this point let us deal with this the simple way, using threads and Futures. This will be good enough for a demo application, and will provide a stepping stone to the more advanced tools.
+
+So first of all we need an execution context. We don't want to use the `scala.concurrent.ExecutionContext.global`
+default one, as we may easily create a lot of threads. So we create our own. (Remember we can later take this code and turn it into a script that we can import in one go.)
+
+```Scala
+import java.util.concurrent.ThreadPoolExecutor
+val threadPooleExec = new ThreadPoolExecutor(2,50,20,java.util.concurrent.TimeUnit.SECONDS,new java.util.concurrent.LinkedBlockingQueue[Runnable])
+implicit lazy val webcontext = ExecutionContext.fromExecutor(threadPooleExec,err=>System.out.println("web error: "+err))
+```
+
+Next we can create a very simple cache class. This one is not synchronised and should only be used by one thread.
+It would be easy to create a more battle proof cache with [`java.util.concurrent.atomic.AtomicReference`](http://docs.oracle.com/javase/8/docs/api/java/util/concurrent/atomic/AtomicReference.html), but I'll leave that as an exercise to the reader. This makes the code easier to read.
+
+```Scala
+class Cache(implicit val ex: ExecutionContext) {
+   import scala.collection.mutable.Map
+   val db = Map[Sesame#URI, Future[HttpResponse[Try[Sesame#Graph]]]]()
+   def get(uri: Sesame#URI): Future[HttpResponse[Try[Sesame#Graph]]] = {
+     val doc = uri.fragmentLess
+     db.get(doc) match {
+       case Some(f) => f
+       case None => {
+         val res = Future( fetch(doc) )
+         db.put( doc, res )
+         res
+       }
+     }
+  }
+}
+```
+
+This we can use as follows:
+
+```Scala
+@ val cache = new Cache()
+cache: Cache = ammonite.$sess.cmd162$Cache@64454830
+@ val bblFuture = cache.get(URI("http://bblfish.net/people/henry/card#me"))
+res164: Future[HttpResponse[Try[org.openrdf.model.Model]]] = Future(<not completed>)
+```
+
+At this point the `bblFuture` a Future of an HttpResponse is `<not completed>`. But if we wait just
+a little we get:
+
+```Scala
+@ bblFuture.isCompleted
+res165: Boolean = true
+```
+And as you see if we call the cache again there is no delay: it returns the previously cached Future,
+which is now completed.
+
+```
+@ cache.get(URI("http://bblfish.net/people/henry/card#me"))
+res166: Future[HttpResponse[Try[org.openrdf.model.Model]]] = Future(Success(HttpResponse(Success([(http://axel.deri.ie/~axepol/foaf.rdf#me, http://www.w3.org/1999/02/22-rdf-syntax-ns#type, http://xmlns.com/foaf/0.1/Person) [null], 
+(http://axel.deri.ie/~axepol/foaf.rdf#me, http://xmlns.com/foaf/0.1/name, "Axel Polleres"^^<http://www.w3.org/2001/XMLSchema#string>) [null], 
+(http://b4mad.net/FOAF/goern.rdf#goern, http://www.w3.org/1999/02/22-rdf-syntax-ns#type, ...))]))))
+```
+
+Good so we can use the above now to follow the links.
 
 
 # Todo
