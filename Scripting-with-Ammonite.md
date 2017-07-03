@@ -315,8 +315,7 @@ So first of all we need an execution context. We don't want to use the `scala.co
 default one, as we may easily create a lot of threads. So we create our own. (Remember we can later take this code and turn it into a script that we can import in one go.)
 
 ```Scala
-import scala.concurrent.Future
-import java.util.concurrent.ThreadPoolExecutor
+import scala.concurrent.{Future,ExecutionContext,ThreadPoolExecutor}
 val threadPooleExec = new ThreadPoolExecutor(2,50,20,java.util.concurrent.TimeUnit.SECONDS,new java.util.concurrent.LinkedBlockingQueue[Runnable])
 implicit lazy val webcontext = ExecutionContext.fromExecutor(threadPooleExec,err=>System.out.println("web error: "+err))
 ```
@@ -325,6 +324,9 @@ Next we can create a very simple cache class. This one is not synchronised and s
 It would be easy to create a more battle proof cache with [`java.util.concurrent.atomic.AtomicReference`](http://docs.oracle.com/javase/8/docs/api/java/util/concurrent/atomic/AtomicReference.html), but I'll leave that as an exercise to the reader. This makes the code easier to read.
 
 ```Scala
+case class HttpException(docURL: Sesame#URI, code: Int, headers: Map[String, IndexedSeq[String]]) extends java.lang.Exception
+case class ParseException(docURL: Sesame#URI, parseException: java.lang.Throwable) extends java.lang.Exception
+
 class Cache(implicit val ex: ExecutionContext) {
    import scala.collection.mutable.Map
    val db = Map[Sesame#URI, Future[HttpResponse[Try[Sesame#Graph]]]]()
@@ -339,15 +341,37 @@ class Cache(implicit val ex: ExecutionContext) {
        }
      }
   }
+
+  def getPointed(uri: Sesame#URI): Future[PointedGraphWeb] =
+     get(uri).flatMap{ response =>
+         if (! response.is2xx ) Future.failed(HttpException(uri, response.code, response.headers))
+         else {
+           val moreTryInfo = response.body.recoverWith{ case t => Failure(ParseException(uri,t)) }
+           Future.fromTry(moreTryInfo).map{g=>
+               PointedGraphWeb(uri.fragmentLess,PointedGraph[Sesame](uri,g),response.headers.toMap)
+           }
+        }
+     }
+
+    case class PointedGraphWeb(webDocURL: Sesame#URI,
+                           pointedGraph: PointedGraph[Sesame],
+                           headers: scala.collection.immutable.Map[String,IndexedSeq[String]]) {
+        def jump(rel: Sesame#URI)(implicit cache: Cache): Seq[Future[PointedGraphWeb]] =
+          (pointedGraph/rel).toSeq.map{ pg =>
+              if (pg.pointer.isURI) cache.getPointed(pg.pointer.asInstanceOf[Sesame#URI])
+              else Future.successful(PointedGraphWeb.this.copy(pointedGraph=PointedGraph[Sesame](pg.pointer, pointedGraph.graph)))
+       }
+    }
 }
 ```
 
-This we can use as follows:
+Because dealing with types such as `Future[HttpResponse[Try[Sesame#Graph]]]` returned by the `Cache.get`
+method, it is easier to compress that information into a PointedGraphWeb, which is a pointedGraph on the web. It conains the name of the graph, and some headers so that one can also work out the version and date of it.
 
 ```Scala
 @ val cache = new Cache()
 cache: Cache = ammonite.$sess.cmd162$Cache@64454830
-@ val bblFuture = cache.get(URI("http://bblfish.net/people/henry/card#me"))
+@ val bblFuture = cache.getPointed(URI("http://bblfish.net/people/henry/card#me"))
 res164: Future[HttpResponse[Try[org.openrdf.model.Model]]] = Future(<not completed>)
 ```
 
