@@ -10,23 +10,22 @@
 
 2) start Ammonite 
 
-3) run the following at the `>` command prompt, which will be
+3) run the following at the `@` command prompt, which will be
 specific to your environment:
 
 ```Scala
-> import coursier.core.Authentication, coursier.MavenRepository
+import coursier.core.Authentication, coursier.MavenRepository
 
-> interp.repositories() ++= Seq(MavenRepository(
+interp.repositories() ++= Seq(MavenRepository(
   "http://bblfish.net/work/repo/snapshots/"
   ))
 
 /** these are not needed as I think they are imported by the next command
-> import $ivy.`org.w3::banana:0.8.4-SNAPSHOT`
-> import $ivy.`org.w3::banana-rdf:0.8.4-SNAPSHOT`
+ import $ivy.`org.w3::banana:0.8.4-SNAPSHOT`
+ import $ivy.`org.w3::banana-rdf:0.8.4-SNAPSHOT`
 */
 
-> import $ivy.`org.w3::banana-sesame:0.8.4-SNAPSHOT`
-
+import $ivy.`org.w3::banana-sesame:0.8.4-SNAPSHOT`
 ```
 
 those last imports will download a lot of libraries the first time round. Here we are
@@ -36,14 +35,15 @@ Jena.
 # Constructing and querying RDF Graphs
 
 Next we are going to try building a graph, taking code from [the diesel example](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf-test-suite/shared/src/main/scala/org/w3/banana/diesel/DieselGraphConstructTest.scala). First we import
-the classes and functions we need.
+the classes and functions we need. (I have removed the > sign to make it easier to copy and paste 
+the whole lot in one go)
 
 ```Scala
-> import org.w3.banana._
-> import org.w3.banana.syntax._
-> import org.w3.banana.sesame.Sesame
-> import Sesame.ops
-> import ops._
+import org.w3.banana._
+import org.w3.banana.syntax._
+import org.w3.banana.sesame.Sesame
+import Sesame._
+import ops._
 ```
 
 Then we import the [foaf ontology](http://xmlns.com/foaf/0.1/) identifiers that
@@ -52,8 +52,8 @@ are so useful in examples. This makes a lot easier to read than having to write 
 completely.
 
 ```Scala
-> val foaf = FOAFPrefix[Sesame]
-> val alex: PointedGraph[Sesame] = (
+@ val foaf = FOAFPrefix[Sesame]
+@ val alex: PointedGraph[Sesame] = (
                bnode("betehess")
                -- foaf.name ->- "Alexandre".lang("fr")
                -- foaf.title ->- "Mr"
@@ -72,7 +72,7 @@ We can output that graph consisting of two triples in what is conceptually
 the simplest of all RDF formats: [NTriples](https://www.w3.org/TR/n-triples/).
 
 ```Scala
-> ntriplesWriter.asString(alex.graph,"")
+@ ntriplesWriter.asString(alex.graph,"")
 res49: scala.util.Try[String] = Success(
   """_:betehess <http://xmlns.com/foaf/0.1/title> "Mr"^^<http://www.w3.org/2001/XMLSchema#string> .
 _:betehess <http://xmlns.com/foaf/0.1/name> "Alexandre"@fr ."""
@@ -83,7 +83,7 @@ The easiest format to write is the above mentioned [Turtle](https://www.w3.org/T
 and you can see how the output here is somewhat similar to the Diesel banana-rdf DSL.
 
 ```Scala
-> turtleWriter.asString(alex.graph,"")
+@ turtleWriter.asString(alex.graph,"")
 res50: scala.util.Try[String] = Success(
   """
 _:betehess <http://xmlns.com/foaf/0.1/title> "Mr" ;
@@ -99,10 +99,15 @@ from a node are one to many, we receive not just one PointedGraph back but a seq
 final 's' - is for.
 
 ```Scala
-> alex/foaf.name
+@ alex/foaf.name
 res15: PointedGraphs[Sesame] = PointedGraphs(org.w3.banana.PointedGraph$$anon$1@432f1d0a)
+```
 
-> res15.map( _.pointer )
+Notice that if we don't give a name to a function return value Ammonite gives it a name. In this case `res15`,
+which we can use in the shell:
+
+```Scala
+@ res15.map( _.pointer )
 res17: Iterable[Sesame#Node] = List("Alexandre"@fr)
 ```
 
@@ -115,17 +120,17 @@ First let us load a simple Scala wrapper around the Java HTTP library,
 [scalaj-http](https://github.com/scalaj/scalaj-http).
 
 ```Scala
-> interp.load.ivy("org.scalaj" %% "scalaj-http" % "2.3.0")
+@ interp.load.ivy("org.scalaj" %% "scalaj-http" % "2.3.0")
 ```
 
 We can now start using banana-rdf on real data.
 
 ```Scala
-> import scalaj.http._
+@ import scalaj.http._
 import scalaj.http._
-> val henryDocUrl = "http://bblfish.net/people/henry/card"
+@ val henryDocUrl = "http://bblfish.net/people/henry/card"
 henryDocUrl: String = "http://bblfish.net/people/henry/card"
->  val henryDocReq = Http(henryDocUrl)
+@  val henryDocReq = Http(henryDocUrl)
 henryDoc: HttpRequest = HttpRequest(
   "http://bblfish.net/people/henry/card",
   "GET",
@@ -143,7 +148,7 @@ henryDoc: HttpRequest = HttpRequest(
   QueryStringUrlFunc,
   true
 )
-> val henryDoc = henryDocReq.asString
+@ val henryDoc = henryDocReq.asString
 henryDoc: HttpResponse[String] = HttpResponse(
   """@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix : <http://xmlns.com/foaf/0.1/> .
@@ -171,18 +176,18 @@ is inherited by the `ops` we imported earlier defined in the sesame case
 [in the SesameModule](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/sesame/src/main/scala/org/w3/banana/sesame/SesameModule.scala)
 
 ```Scala
-> val hg = turtleReader.read(new java.io.StringReader(henryDoc.body), henryDocUrl)
+@ val hg = turtleReader.read(new java.io.StringReader(henryDoc.body), henryDocUrl)
  hg: scala.util.Try[Sesame#Graph] = Success(
   [(http://axel.deri.ie/~axepol/foaf.rdf#me, http://www.w3.org/1999/02/22-rdf-syntax-ns#type, http://xmlns.com/foaf/0.1/Person) [null], (http://axel.deri.ie/~axepol/foaf.rdf#me, http://xmlns.com/foaf/0.1/name, "Axel Polleres"^^<http://www.w3.org/2001/XMLSchema#string>) [null],
 ...]
-> val pg = PointedGraph[Sesame](URI(henryDocUrl+"#me"),hg.get)
+@ val pg = PointedGraph[Sesame](URI(henryDocUrl+"#me"),hg.get)
 pg: PointedGraph[Sesame] = org.w3.banana.PointedGraph$$anon$1@6a39a42c
-> val knows = pg/foaf.knows
+@ val knows = pg/foaf.knows
 knows: PointedGraphs[Sesame] = PointedGraphs(
   org.w3.banana.PointedGraph$$anon$1@53dc5333,
   org.w3.banana.PointedGraph$$anon$1@787fdb85,
 ...)
-> (knows/foaf.name).map(_.pointer)
+@ (knows/foaf.name).map(_.pointer)
 res45: Iterable[Sesame#Node] = List(
   "Axel Polleres"^^<http://www.w3.org/2001/XMLSchema#string>,
   "Christoph  Görn"^^<http://www.w3.org/2001/XMLSchema#string>,
@@ -227,7 +232,7 @@ A little bit of playing around and we arrive at this function, that nicely
 gives us all the information we need:
 
 ```Scala
-> def fetch(point: Sesame#URI):  HttpResponse[scala.util.Try[PointedGraph[Sesame]]] = {
+@ def fetch(point: Sesame#URI):  HttpResponse[scala.util.Try[PointedGraph[Sesame]]] = {
           val docUrl = point.fragmentLess.toString
           Http(docUrl).execute{ is =>
              turtleReader.read(is,point.fragmentLess.toString)
@@ -285,7 +290,7 @@ not that difficult. The code was written entirely in the Ammonite shell (and tha
 longest piece of code that makes sense to write there).
 
 ```Scala
-> val bblgrph = fetch(URI("http://bblfish.net/people/henry/card"))
+@ val bblgrph = fetch(URI("http://bblfish.net/people/henry/card"))
 bblgrph: HttpResponse[Try[org.openrdf.model.Model]] = HttpResponse(
   Success(
     [(http://axel.deri.ie/~axepol/foaf.rdf#me, http://www.w3.org/1999/02/22-rdf-syntax-ns#type, http://xmlns.com/foaf/0.1/Person) [null], 
