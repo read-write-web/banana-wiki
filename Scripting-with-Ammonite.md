@@ -186,7 +186,7 @@ We can illustrate the above interaction with the following diagram. As you see t
 
 ![following the foaf:knows in timbl pointed graph](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/followingKnowsInPG.png)
 
-Again this is very similar to OO notation when you follow an attribute to get its value, when that operation does not change the state of the Virtual Machine.
+Again this is very similar to OO programming when you follow an attribute to get its value.
 
 You can explore more examples by looking at the test suite, starting from [the diesel example](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf-test-suite/shared/src/main/scala/org/w3/banana/diesel/DieselGraphConstructTest.scala).
 
@@ -338,13 +338,13 @@ Above we have explored the data in one remote resource. But what about the docum
 
 In the [Friend of a Friend](http://xmlns.com/foaf/spec/) profile we [downloaded above](http://bblfish.net/people/henry/card), Henry keeps the names of the
 people he knows, so that 
- * if a link goes bad, he can remember who he intended the link to refer to (in order to fix it if possible)
- * to allow user interfaces to immediately give some information about what he was intending to link to
-to, without having to downloading more information.
+
+ * if a link goes bad, he can remember whome he intended the link to refer to (in order to fix it if possible)
+ * to allow user interfaces to immediately give some information about what he was intending to link to to, without having to downloading more information.
 
 But most of the information is actually not in his profile - why after all should he keep his profile
 up to date about where his friends live, who their friends are, what their telephone number is, 
-where their blogs are located, etc.... If he did not share responsibility with others in keeping
+where their blogs are located, etc...? If he did not share responsibility with others in keeping
 data up to date, he would soon have to maintain all the information in the world. 
 
 That is where linked data comes  in: it allows different people and organisations to share the burden of maintaining information. The URLs used in the names of the relations and the names
@@ -357,8 +357,8 @@ are urls that don't belong to the original  document (ie are not #urls that belo
 blank nodes or literals). Then for each such URL `url` having  downloaded the documents that those URLs point to, parsed them into a graph `g` and created a pointed graph `PointedGraph(url,g)` we can then continue
 exploring the data from that location. 
 
-In the above example we asked for the default representation of the `henryDocUrl` resource.
-As it happened it returned Turtle. But as we want to follow the `knows/foaf.knows` links to other.
+We need to automate this process as much as possible though. In the above example we asked for the default representation of the `henryDocUrl` resource.
+As it happened it returned Turtle, and we were then able to use the right parser. But we would like a library to automate this task so that the software can follow the `knows/foaf.knows` links to other pages automatically.
 
 Let us write this then as little scripts and see how far we get.
 
@@ -384,9 +384,11 @@ It keeps all the headers that we received, which may be useful for the extra inf
 
 But it is not quite right. There are two problems both related to the various syntaxes that RDF can be published in:
 
-1. As we follow links on the web we would like to tell the server we come accross what types of mime types we understand so we increase the likeleyhood that it sends one we can parse. For sesame [we currently can parse](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/sesame/src/main/scala/org/w3/banana/sesame/SesameModule.scala) the following syntaxes for RDF: [RDF/XML](https://www.w3.org/TR/rdf-syntax-grammar/) popular in the early 2000s when XML was popular, [NTriples](https://www.w3.org/TR/n-triples/) the easiest to parse, [Turtle](https://www.w3.org/TR/turtle/) the easiest to read, [json-ld](https://json-ld.org/) popular because of it's encoding in JSON.
+1. As we follow links on the web we would like to tell the server we come accross what types of mime types we understand so we increase the likeleyhood that it sends one we can parse. For Sesame [we currently can parse](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/sesame/src/main/scala/org/w3/banana/sesame/SesameModule.scala) the following syntaxes for RDF: [RDF/XML](https://www.w3.org/TR/rdf-syntax-grammar/) popular in the early 2000s when XML was popular, [NTriples](https://www.w3.org/TR/n-triples/) the easiest to parse, [Turtle](https://www.w3.org/TR/turtle/) the easiest to read, [json-ld](https://json-ld.org/) popular because of it's encoding in JSON.
 
 2. When we receive the response we need to select the parser given the mime type of the document returned by the server.
+
+Here is a version that addresses both of these questions:
 
 
 ```Scala
@@ -423,9 +425,7 @@ def fetch(docUrl: Sesame#URI): HttpResponse[scala.util.Try[Sesame#Graph]] = {
 }
 ```
 
-The above functions shows that dealing with the mime types is a little tricky perhaps, but
-not that difficult. The code was written entirely in the Ammonite shell (and that is perhaps the
-longest piece of code that makes sense to write there).
+The above functions shows that dealing with the mime types is a little tricky perhaps, but not that difficult. The code was written entirely in the Ammonite shell (and that is perhaps the longest piece of code that makes sense to write there).
 
 ```Scala
 @ val bblgrph = fetch(URI("http://bblfish.net/people/henry/card"))
@@ -437,12 +437,11 @@ bblgrph: HttpResponse[Try[org.openrdf.model.Model]] = HttpResponse(
 
 # Efficiency improvements: Asynchrony and Caching
 
-As we will want to fetch a number of graphs by following the `foaf:knows` links, we would like to do
-this in parallel. 
+As we will want to fetch a number of graphs by following the `foaf:knows` links, we would like to do this in parallel. 
 
-At this point the [`java.net.HttpURLConnection`](https://docs.oracle.com/javase/8/docs/api/java/net/HttpURLConnection.html) starts showing its age and limitations as it is a blocking call that holds onto a thread. And threads are expensive: over half a MB each. This may not sound like a lot but if you want to open 1000 threads simultaneously you would end up using up half a Gigabyte just in thead overhead, and your system would become very slow as the Virtual Machien will keeep jumping through 1000 threads just waiting to see if any one of them has something to parse, where most of the time they won't - as internet connecitons are close to 1 billion times slower than fetching information from an internal CPU cache.
+At this point the [`java.net.HttpURLConnection`](https://docs.oracle.com/javase/8/docs/api/java/net/HttpURLConnection.html) starts showing its age and limitations as it is a blocking call that holds onto a thread. And threads are expensive: over half a MB each. This may not sound like a lot but if you want to open 1000 threads simultaneously you would end up using up half a Gigabyte just in thead overhead, and your system would become very slow as the Virtual Machine will keeep jumping through 1000 threads just waiting to see if any one of them has something to parse, where most of the time they won't - as internet connections are close to 1 billion times slower than fetching information from an internal CPU cache.
 
-But in order to avoid brining in too many other concepts at this point let us deal with this the simple way, using threads and Futures. This will be good enough for a demo application, and will provide a stepping stone to the more advanced tools.
+But in order to avoid brining in too many other concepts at this point let us deal with this the simple way, using threads and Futures. This will be good enough for a demo application, and will provide a stepping stone to the more advanced tools. It will also make sure that you will notice if you start hammering the internet, as your computer will slow down quite quickly.
 
 So first of all we need an execution context. We don't want to use the `scala.concurrent.ExecutionContext.global`
 default one, as we may easily create a lot of threads. So we create our own. (Remember we can later take this code and turn it into a script that we can import in one go.)
@@ -505,6 +504,11 @@ class Cache(implicit val ex: ExecutionContext) {
 Because dealing with types such as `Future[HttpResponse[Try[Sesame#Graph]]]` returned by the `Cache.get`
 method, it is easier to compress that information into a PointedGraphWeb, which is a pointedGraph on the web. It conains the name of the graph, and some headers so that one can also work out the version and date of it.
 
+Here is a slightly simplified picture of a PointedGraphWeb in the style of the previous ones:
+
+![following the foaf:knows in timbl pointed graph](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/PointedGraphWeb.png)
+
+
 ```Scala
 @ val cache = new Cache()
 cache: Cache = ammonite.$sess.cmd162$Cache@64454830
@@ -512,8 +516,7 @@ cache: Cache = ammonite.$sess.cmd162$Cache@64454830
 res164: Future[HttpResponse[Try[org.openrdf.model.Model]]] = Future(<not completed>)
 ```
 
-At this point the `bblFuture` a Future of an HttpResponse is `<not completed>`. But if we wait just
-a little we get:
+At this point the `bblFuture` a Future of an HttpResponse is `<not completed>`. But if we wait just a little we get:
 
 ```Scala
 @ bblFuture.isCompleted
