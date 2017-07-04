@@ -1,18 +1,38 @@
-[Ammonite](http://ammonite.io/) is new Scala based shell, a typesafe replacement of bash, that makes scripting fun again. In particular it should prove to be a great tool to start exploring the semantic web, as if it were part of your file system, write some small initial scripts to try out ideas, and actually make the samantic web part of your scripting environment.
+ This wiki page explains the why and how of banana-rdf in a practical way. This will help you getting started, in an easy step by step fashion using the Ammonite command line, and start making this library real with practical and fun examples of the Semantic Web.
+  
+  We will explain the major concepts along the way in a step by step fashion which you can follow easily on the new Ammonite command line for yourself. The aim is to quickly get you to understand Linked Data by exploring it on the web using the banana-rdf library, so that you can start writing your own shell scripts and move on to larger programs the full value of this framework starts becoming clear.
 
- This wiki page collects some of the things one needs to get going with Ammonite and banana-rdf.  It hopefully will lead to improvements to banana-rdf to make working in Ammonite easier. 
+## Why Ammonite?
 
-# Ammonite and Banana-RDF
+[Ammonite](http://ammonite.io/) is the revolutionary Scala based shell, a typesafe replacement of bash, that makes scripting fun, safe and efficient. 
 
-1) Download [Ammonite Shell](http://ammonite.io/#Ammonite-Shell) as described on their documentation page
+Whereas in a unix shell, processes communicate through the singly typed string interface of the unix pipe, in Ammonite they communicate using composable typed functions, that can use the vast array of libraries written for Java and Scala.   In the Unix shell each process has to parse the result of the previous as a simple string, which is both very innefficient and introduces potential dangerous errors that can only be spotted at runtime. 
+
+The Java based environement brings full Unicode support, mulithreaded programming, and programmatic access to the web, all of which can be now used directly from the shell.
+
+In particular it should prove to be a great tool to start exploring the semantic web, as if it were part of your file system, write some small initial scripts to try out ideas, and make it part of your scripting environment.
+
+ 
+## Ammonite and Banana-RDF
+
+1) Download [Ammonite Shell](http://ammonite.io/#Ammonite-Shell) as described on their documentation page.  For the newly released Ammonite 1.0 (4 July 2017) it is as easy as running the following two lines from the command line
+
+```bash
+$ mkdir -p ~/.ammonite && curl -L -o ~/.ammonite/predef.sc https://git.io/vHaKQ
+$ sudo curl -L -o /usr/local/bin/amm https://git.io/vQEhd && sudo chmod +x /usr/local/bin/amm && amm
+```
+   
+   but check the latest on [their excellently documented web site](http://ammonite.io/#Ammonite-Shell) - (and update this wiki).   
   
    For Windows Users check [Ammonite issue 119](https://github.com/lihaoyi/Ammonite/issues/119) and please report any success to us on the gitter channel and if possible a pointer to a howto for it. There are reports that it works well with the latest versions of [Windows 10 Subsystem for Linux](https://en.wikipedia.org/wiki/Windows_Subsystem_for_Linux) that supports Ubuntu 16.04.
 
 2) start Ammonite 
 
-3) run the following at the `@` command prompt, which will be
-specific to your environment. I have removed the `@` prompt from
-may of these examples to make copy and pasting a bit easier.
+```bash
+$ amm
+```
+
+3) Import the banana-rdf libraries. To to this run the following at the `@` command prompt, which will be specific to your environment. I have removed the `@` prompt from may of these examples to make copy and pasting easier. After each of these lines you will see a response from the command prompt.
 
 ```Scala
 import coursier.core.Authentication, coursier.MavenRepository
@@ -21,23 +41,22 @@ interp.repositories() ++= Seq(MavenRepository(
   "http://bblfish.net/work/repo/snapshots/"
   ))
 
-/** these are not needed as I think they are imported by the next command
- import $ivy.`org.w3::banana:0.8.4-SNAPSHOT`
- import $ivy.`org.w3::banana-rdf:0.8.4-SNAPSHOT`
-*/
-
 import $ivy.`org.w3::banana-sesame:0.8.4-SNAPSHOT`
 ```
 
-those last imports will download a lot of libraries the first time round. Here we are
-choosing to use the Sesame implementation of banana. You could use another one, such as
-Jena.
+those last imports will download a lot of libraries the first time round. Here we are choosing to use the Sesame implementation of banana. You could use another one, such as Jena.  
+
+_todo: in the near future we will genericise the
+code to allow you to choose which version you prefer to use in a couple of lines of code_
 
 # Constructing and querying RDF Graphs
 
-Next we are going to try building a graph, taking code from [the diesel example](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf-test-suite/shared/src/main/scala/org/w3/banana/diesel/DieselGraphConstructTest.scala). First we import
-the classes and functions we need. (I have removed the > sign to make it easier to copy and paste 
-the whole lot in one go)
+Next we are going to build an RDF graph. A RDF graph can be visualised as just a set of arrows between objects.
+
+![]()
+
+ First we import
+the classes and functions we need. (I have removed the `@` command line prompt  to make it easier to copy and paste the whole lot in one go)
 
 ```Scala
 import org.w3.banana._
@@ -60,6 +79,7 @@ foaf: FOAFPrefix[Sesame] = Prefix(foaf)
                bnode("betehess")
                -- foaf.name ->- "Alexandre".lang("fr")
                -- foaf.title ->- "Mr"
+               -- foaf.knows ->- URI("http://bblfish.net/people/henry/card#me")
              )
 alex: PointedGraph[Sesame] = org.w3.banana.PointedGraph$$anon$1@21e9fd9e
 ```
@@ -115,6 +135,8 @@ which we can use in the shell:
 @ res15.map( _.pointer )
 res17: Iterable[Sesame#Node] = List("Alexandre"@fr)
 ```
+
+You can explore more examples by looking at the test suite, starting from [the diesel example](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf-test-suite/shared/src/main/scala/org/w3/banana/diesel/DieselGraphConstructTest.scala).
 
 # Working with Graphs on the Web
 
