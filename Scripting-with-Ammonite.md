@@ -51,15 +51,21 @@ code to allow you to choose which version you prefer to use in a couple of lines
 
 # Constructing and querying RDF Graphs
 
-Next we are going to build an RDF graph. RDF, stands for Resoure Description Framework, and is used to describe things by relating them to one anther. For
-example we could describe the event the displays a relationship of knowing each other of Tim Berners Lee and Vint Cerf as depicted here:
+Next we are going to build an RDF graph. RDF, stands for Resoure Description Framework, and is used to describe things by relating them to one another. For
+example we could describe the relation of Tim Berners Lee and Vint Cert as a relation `aRb` between them as described in the picture below.
 
 ![Mini Graph of TimBl](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/VintCertTimBLHandShake.png)
 
+But if one were just given `aRb` without the picture, how could one know what it means? Where could one look up that information? How could one create new types of relations? This is what RDF - the Resource Description Framework - solves by naming relations and things with URIs, that can, especially if they are `http` or `https` URLs be dereferences from the web - as we will see in the next section - in order to glean more information from them. 
 
-RDF displays these arrows by naming them with global identifiers named URIs, though the (http and https) URLs will interest us here most of all.
+Here for example is a more detailed graph consisting of 4 arrows describing the relation between Tim, Vint Cert, and some other entity described by a long URL 
+[`<http://bblfish.net/people/henry/card#me>`](http://bblfish.net/people/henry/card#me). 
 
 ![Mini Graph of TimBl](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/TimBLGraph.png)
+
+ The relations are not written out in full in the above example, as that would be awkward to read and take up a lot of space. Instead we have relations named `foaf:name` and `foaf:knows` which are composed of two parts seperated by a column: a namespace part 'foaf' which stands for `http://xmlns.com/foaf/0.1/` followed by a string `name` or `knows` which can be concatenated together to form a URL, in this case [`http://xmlns.com/foaf/0.1/name`](http://xmlns.com/foaf/0.1/name) and [`http://xmlns.com/foaf/0.1/name`](http://xmlns.com/foaf/0.1/name). 
+
+ How do we write this out in banana-rdf?
 
  First we import the classes and functions we need. (I have removed the `@` command line prompt  to make it easier to copy and paste the whole lot in one go)
 
@@ -73,14 +79,14 @@ import ops._
 
 Then we import the [foaf ontology](http://xmlns.com/foaf/0.1/) identifiers that
 are predefined for us in the [banana prefix file](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf/shared/src/main/scala/org/w3/banana/Prefix.scala) as they
-are so useful in examples. This makes a lot easier to read than having to write URIs out
+are so useful. This makes a lot easier to read than having to write URIs out
 completely. (here to show the interactive side I have left the `@` prompt in, and the response
 from running the code)
 
 ```Scala
 @ val foaf = FOAFPrefix[Sesame]
 foaf: FOAFPrefix[Sesame] = Prefix(foaf)
-@ val alex: PointedGraph[Sesame] = (
+@ val timbl: PointedGraph[Sesame] = (
                bnode("betehess")
                -- foaf.name ->- "Alexandre".lang("fr")
                -- foaf.title ->- "Mr"
@@ -89,38 +95,39 @@ foaf: FOAFPrefix[Sesame] = Prefix(foaf)
 alex: PointedGraph[Sesame] = org.w3.banana.PointedGraph$$anon$1@21e9fd9e
 ```
 
-This Domain Specific Language (DSL) produces a [PointedGraph](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf/shared/src/main/scala/org/w3/banana/PointedGraph.scala) which is just
-a graph and a pointer into the graph.
-
-This pointed graph has as subject a blank node internally named "betehess" which has 
-two relations `foaf.knows` and `foaf.title` to literals. The syntax is meant
-to be somewhat reminiscent of the [Turtle](https://www.w3.org/TR/turtle/) format.
-
-We can output that graph consisting of two triples in what is conceptually
-the simplest of all RDF formats: [NTriples](https://www.w3.org/TR/n-triples/).
-(Again here the output is important. The line to type in is the first one following the `@`
-prompt)
+We can output that graph consisting of five relations (also known as "triples") in what is conceptually the simplest of all RDF formats: [NTriples](https://www.w3.org/TR/n-triples/).
+(Again here the output is important. The line to type in is the first one following the `@` prompt)
 
 ```Scala
-@ ntriplesWriter.asString(alex.graph,"")
-res49: scala.util.Try[String] = Success(
-  """_:betehess <http://xmlns.com/foaf/0.1/title> "Mr"^^<http://www.w3.org/2001/XMLSchema#string> .
-_:betehess <http://xmlns.com/foaf/0.1/name> "Alexandre"@fr ."""
+@ ntriplesWriter.asString(timbl.graph,"")
+res54: Try[String] = Success(
+  """<https://www.w3.org/People/Berners-Lee/card#i> <http://xmlns.com/foaf/0.1/knows> <http://bblfish.net/people/henry/card#me> .
+_:vint <http://xmlns.com/foaf/0.1/name> "Vint Cerf"^^<http://www.w3.org/2001/XMLSchema#string> .
+<https://www.w3.org/People/Berners-Lee/card#i> <http://xmlns.com/foaf/0.1/knows> _:vint .
+<https://www.w3.org/People/Berners-Lee/card#i> <http://xmlns.com/foaf/0.1/plan> "Make the Web Great Again"^^<http://www.w3.org/2001/XMLSchema#string> .
+<https://www.w3.org/People/Berners-Lee/card#i> <http://xmlns.com/foaf/0.1/name> "Tim Berners-Lee"@en ."""
 )
 ```
 
-The easiest format to write is the above mentioned [Turtle](https://www.w3.org/TR/turtle/) format,
-and you can see how the output here is somewhat similar to the Diesel banana-rdf DSL.
+The easiest format to write RDF is the [Turtle](https://www.w3.org/TR/turtle/) format, and you can see how the output here is somewhat similar to the Diesel banana-rdf DSL.
 
 ```Scala
-@ turtleWriter.asString(alex.graph,"")
-res50: scala.util.Try[String] = Success(
+@ turtleWriter.asString(timbl.graph,"")
+res55: Try[String] = Success(
   """
-_:betehess <http://xmlns.com/foaf/0.1/title> "Mr" ;
-	<http://xmlns.com/foaf/0.1/name> "Alexandre"@fr .
+<https://www.w3.org/People/Berners-Lee/card#i> <http://xmlns.com/foaf/0.1/knows> <http://bblfish.net/people/henry/card#me> , _:vint ;
+        <http://xmlns.com/foaf/0.1/plan> "Make the Web Great Again" ;
+        <http://xmlns.com/foaf/0.1/name> "Tim Berners-Lee"@en .
+
+_:vint <http://xmlns.com/foaf/0.1/name> "Vint Cerf" .
 """
-)
 ```
+
+An attentive reader will have noticed that the Domain Specific Language (DSL) we used above to produce those outputs returned a [PointedGraph](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf/shared/src/main/scala/org/w3/banana/PointedGraph.scala). This is an extreemly simple concept best illustrated by the following
+
+![PointedGraph TimBl](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/TimBLPointedGraph.png)
+
+
 
 Next we can explore the graph in a way that is somewhat reminiscent of OO programming,
 but with the dot `.` notation replaced with a `/` notation. As RDF relations when starting
