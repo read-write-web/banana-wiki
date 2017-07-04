@@ -250,8 +250,11 @@ This following illustration captures the interaction between your computer and t
 
 ![following the foaf:knows in timbl pointed graph](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/HttpGETReqResponse.png)
 
+This illustrates the request made from JavaScript in the browser, which then displays that data using a [Scala-JS](http://scala-js.org) program available in the [rww-scala-js repository](https://github.com/read-write-web/rww-scala-js).
 
-So now we have downloaded the Turtle, we just need to parse it into a graph and
+But before we go on writing user interfaces for people who will never know what RDF is, requiring us to work with Web Designers, artists, psychologists and others, let us stick to the command line interface.
+
+So having downloaded the Turtle, we just need to parse it into a graph and
 point onto a node of the graph (a `PointedGraph`) to explore it. (The turtle parser  is inherited by the `ops` we imported earlier defined in the sesame case
 [in the SesameModule](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/sesame/src/main/scala/org/w3/banana/sesame/SesameModule.scala)
 
@@ -267,6 +270,12 @@ knows: PointedGraphs[Sesame] = PointedGraphs(
   org.w3.banana.PointedGraph$$anon$1@53dc5333,
   org.w3.banana.PointedGraph$$anon$1@787fdb85,
 ...)
+```
+
+Now that we have out PointedGraph we can explore it the way we did 
+in the previous section. But here we are likely to learn something new.
+
+```Scala
 @ (knows/foaf.name).map(_.pointer)
 res45: Iterable[Sesame#Node] = List(
   "Axel Polleres"^^<http://www.w3.org/2001/XMLSchema#string>,
