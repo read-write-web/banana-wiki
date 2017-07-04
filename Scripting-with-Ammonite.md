@@ -124,6 +124,40 @@ _:vint <http://xmlns.com/foaf/0.1/name> "Vint Cerf" .
 """
 ```
 
+And since nothing is cool nowadays if does not produce JSON, here is the
+JSON-LD rendition of it:
+
+```Scala
+jsonldCompactedWriter.asString(timbl.graph,"").get
+```
+
+which will return the following json
+
+```json
+{
+  "@graph" : [ {
+    "@id" : "_:vint",
+    "http://xmlns.com/foaf/0.1/name" : "Vint Cerf"
+  }, {
+    "@id" : "https://www.w3.org/People/Berners-Lee/card#i",
+    "http://xmlns.com/foaf/0.1/knows" : [ {
+      "@id" : "http://bblfish.net/people/henry/card#me"
+    }, {
+      "@id" : "_:vint"
+    } ],
+    "http://xmlns.com/foaf/0.1/name" : {
+      "@language" : "en",
+      "@value" : "Tim Berners-Lee"
+    },
+    "http://xmlns.com/foaf/0.1/plan" : "Make the Web Great Again"
+  } ]
+}
+```
+
+For a full list of currently integrated serialisers look at the [SesameModule.scala](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/sesame/src/main/scala/org/w3/banana/sesame/SesameModule.scala) file.
+
+(Note: It is very likely that there are newer json serialisers than the one that banana-rdf is using that produce much better output than this, as this has not been updated for over a year.)
+
 The attentive reader will have noticed that the Domain Specific Language (DSL) we used above to produce those outputs returned a [PointedGraph](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf/shared/src/main/scala/org/w3/banana/PointedGraph.scala). This is an extreemly simple concept best illustrated by the following diagram, namely just the pair of a graph and a pointer into the graph.
 
 ![PointedGraph TimBl](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/TimBLPointedGraph.png)
