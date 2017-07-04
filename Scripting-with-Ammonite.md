@@ -203,8 +203,7 @@ First let us load a simple Scala wrapper around the Java HTTP library,
 @ interp.load.ivy("org.scalaj" %% "scalaj-http" % "2.3.0")
 ```
 
-We can now start using banana-rdf on real data. We may wonder who this
-bblfish thing is that found in the graph above.
+We can now start using banana-rdf on real data. One question of interest could be what this `http://bblfish.net/people/henry/card#me` url refers to in the graph above. So let's see what the web tells us.
 
 ```Scala
 @ import scalaj.http._
@@ -286,11 +285,10 @@ This following illustration captures the interaction between your computer and t
 
 This illustrates the request made from JavaScript in the browser, which then displays that data using a [Scala-JS](http://scala-js.org) program available in the [rww-scala-js repository](https://github.com/read-write-web/rww-scala-js).
 
-But before we go on writing user interfaces for people who will never know what RDF is, requiring us to work with Web Designers, artists, psychologists and others, let us stick to the command line interface.
+But before we go on writing user interfaces for people who will never know what RDF is, requiring us to work with Web Designers, artists, psychologists and others, let us stick to the command line interface. We need to learn how this works so that we can then build tools for people who don't. 
 
 So having downloaded the Turtle, we just need to parse it into a graph and
-point onto a node of the graph (a `PointedGraph`) to explore it. (The turtle parser  is inherited by the `ops` we imported earlier defined in the sesame case
-[in the SesameModule](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/sesame/src/main/scala/org/w3/banana/sesame/SesameModule.scala))
+point onto a node of the graph (a `PointedGraph`) to explore it. (The turtle parser  is inherited by the `ops` we imported earlier defined [in the SesameModule](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/sesame/src/main/scala/org/w3/banana/sesame/SesameModule.scala))
 
 ```Scala
 @  val bg = turtleReader.read(new java.io.StringReader(bblDoc.body), bblUrl.fragmentLess.toString)
@@ -298,8 +296,7 @@ bg: Try[Sesame#Graph] = Success(
   [(http://axel.deri.ie/~axepol/foaf.rdf#me, http://www.w3.org/1999/02/22-rdf-syntax-ns#type, http://xmlns.com/foaf/0.1/Person) [null], (http://axel.deri.ie/~axepol/foaf.rdf#me, http://xmlns.com/foaf/0.1/name, "Axel Polleres"^^<http://www.w3.org/2001/XMLSchema#string>) [null], ...])
 ``` 
 
-Having the graph we construct the pointed graph which we can explore it the way we did  in the previous section. But here you are likely to learn something new,
-since you did not put this data together.
+Having the graph we construct the pointed graph, allowing us then to explore it as we did in the previous section. But here we are likely to learn something new, since we did not put this data together ourselves.
   
 ```Scala
 @ val pg = PointedGraph[Sesame](bblUrl,hg.get)
