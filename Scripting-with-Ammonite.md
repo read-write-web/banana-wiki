@@ -96,7 +96,8 @@ alex: PointedGraph[Sesame] = org.w3.banana.PointedGraph$$anon$1@21e9fd9e
 ```
 
 We can output that graph consisting of five relations (also known as "triples") in what is conceptually the simplest of all RDF formats: [NTriples](https://www.w3.org/TR/n-triples/).
-(Again here the output is important. The line to type in is the first one following the `@` prompt)
+(Again here the output is important, so we kept the `@` prompt. Only type the
+that follows that prompt into your ammonite shell)
 
 ```Scala
 @ ntriplesWriter.asString(timbl.graph,"")
@@ -109,7 +110,7 @@ _:vint <http://xmlns.com/foaf/0.1/name> "Vint Cerf"^^<http://www.w3.org/2001/XML
 )
 ```
 
-The easiest format to write RDF is the [Turtle](https://www.w3.org/TR/turtle/) format, and you can see how the output here is somewhat similar to the Diesel banana-rdf DSL.
+The easiest format for humans to read and write RDF is the [Turtle](https://www.w3.org/TR/turtle/) format, and you can see how the output here is somewhat similar to the Diesel banana-rdf DSL.
 
 ```Scala
 @ turtleWriter.asString(timbl.graph,"")
@@ -123,30 +124,35 @@ _:vint <http://xmlns.com/foaf/0.1/name> "Vint Cerf" .
 """
 ```
 
-An attentive reader will have noticed that the Domain Specific Language (DSL) we used above to produce those outputs returned a [PointedGraph](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf/shared/src/main/scala/org/w3/banana/PointedGraph.scala). This is an extreemly simple concept best illustrated by the following
+The attentive reader will have noticed that the Domain Specific Language (DSL) we used above to produce those outputs returned a [PointedGraph](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf/shared/src/main/scala/org/w3/banana/PointedGraph.scala). This is an extreemly simple concept best illustrated by the following diagram, namely just the pair of a graph and a pointer into the graph.
 
 ![PointedGraph TimBl](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/TimBLPointedGraph.png)
 
+So in our `timbl` graph, `https://www.w3.org/People/Berners-Lee/card#i` is the node pointed to. 
 
+This PointedGraph view allows us to move to an Object Oriented (OO) view of the graph. And indeed the `PointedGraph` type comes with some operations that are reminischent of the OO dot `.` notation: the `/` for forward relation exploration and the `/-` for backward relation exploration. 
 
-Next we can explore the graph in a way that is somewhat reminiscent of OO programming,
-but with the dot `.` notation replaced with a `/` notation. As RDF relations when starting
-from a node are one to many, we receive not just one PointedGraph back but a sequence of them
-, which is what the [PointedGraphs](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf/shared/src/main/scala/org/w3/banana/PointedGraphs.scala) - notice the
-final 's' - is for.
 
 ```Scala
-@ alex/foaf.name
-res15: PointedGraphs[Sesame] = PointedGraphs(org.w3.banana.PointedGraph$$anon$1@432f1d0a)
+@ timbl/foaf.knows
+res58: PointedGraphs[Sesame] = PointedGraphs(
+  org.w3.banana.PointedGraph$$anon$1@7d03b6aa,
+  org.w3.banana.PointedGraph$$anon$1@61f7c895
+)
 ```
 
-Notice that if we don't give a name to a function return value Ammonite gives it a name. In this case `res15`,
-which we can use in the shell:
+Notice that if we don't give a name to a function return value Ammonite gives it a name. In this case `res58`, which we can use in the shell:
 
 ```Scala
-@ res15.map( _.pointer )
-res17: Iterable[Sesame#Node] = List("Alexandre"@fr)
+@ res58.map(_.pointer)
+res59: Iterable[Sesame#Node] = List(http://bblfish.net/people/henry/card#me, _:vint)
 ```
+
+We can illustrate the above interaction with the following diagram. As you see the graph remains the same after each operation but the pointer moves.
+
+![PointedGraph TimBl](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/followingKnowsInPG.png)
+
+Again this is very similar to OO notation when you follow an attribute to get its value, when that operation does not change the state of the Virtual Machine.
 
 You can explore more examples by looking at the test suite, starting from [the diesel example](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf-test-suite/shared/src/main/scala/org/w3/banana/diesel/DieselGraphConstructTest.scala).
 
