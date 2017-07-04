@@ -86,13 +86,13 @@ from running the code)
 ```Scala
 @ val foaf = FOAFPrefix[Sesame]
 foaf: FOAFPrefix[Sesame] = Prefix(foaf)
-@ val timbl: PointedGraph[Sesame] = (
-               bnode("betehess")
-               -- foaf.name ->- "Alexandre".lang("fr")
-               -- foaf.title ->- "Mr"
-               -- foaf.knows ->- URI("http://bblfish.net/people/henry/card#me")
-             )
-alex: PointedGraph[Sesame] = org.w3.banana.PointedGraph$$anon$1@21e9fd9e
+@  val timbl: PointedGraph[Sesame] = (
+     URI("https://www.w3.org/People/Berners-Lee/card#i")
+        -- foaf.name ->- "Tim Berners-Lee".lang("en")
+        -- foaf.plan ->- "Make the Web Great Again"
+        -- foaf.knows ->- (bnode("vint") -- foaf.name ->- "Vint Cerf")
+        -- foaf.knows ->- URI("http://bblfish.net/people/henry/card#me")
+ )
 ```
 
 We can output that graph consisting of five relations (also known as "triples") in what is conceptually the simplest of all RDF formats: [NTriples](https://www.w3.org/TR/n-triples/).
@@ -263,12 +263,19 @@ bg: Try[Sesame#Graph] = Success(
   [(http://axel.deri.ie/~axepol/foaf.rdf#me, http://www.w3.org/1999/02/22-rdf-syntax-ns#type, http://xmlns.com/foaf/0.1/Person) [null], (http://axel.deri.ie/~axepol/foaf.rdf#me, http://xmlns.com/foaf/0.1/name, "Axel Polleres"^^<http://www.w3.org/2001/XMLSchema#string>) [null], ...])
 ``` 
 
-Having the graph we construct the pointed graph which we can explore it the way we did  in the previous section. But here we are likely to learn something new,
-since we did not ourselves but this data together.
+Having the graph we construct the pointed graph which we can explore it the way we did  in the previous section. But here you are likely to learn something new,
+since you did not put this data together.
   
 ```Scala
 @ val pg = PointedGraph[Sesame](bblUrl,hg.get)
 pg: PointedGraph[Sesame] = org.w3.banana.PointedGraph$$anon$1@353b86bc
+@ (pg/foaf.name).map(_.pointer)
+res72: Iterable[Sesame#Node] = List("Henry J. Story"^^<http://www.w3.org/2001/XMLSchema#string>)
+```
+
+So now we know the name of the person with the bblfish url. We can see who he claims to know with the following query.
+
+```Scala
 @ val knows = pg/foaf.knows
 knows: PointedGraphs[Sesame] = PointedGraphs(
   org.w3.banana.PointedGraph$$anon$1@53dc5333,
@@ -276,11 +283,11 @@ knows: PointedGraphs[Sesame] = PointedGraphs(
 ...)
 ```
 
-So now we have the list of people the bblfish knows, we can find
-out how many they are and what their names are.
+And we can find out how many they are, what their names are,
+and much more.
 
 ```Scala
-@ @ knows.size
+@ knows.size
 res71: Int = 74
 @ (knows/foaf.name).map(_.pointer)
 res45: Iterable[Sesame#Node] = List(
@@ -289,7 +296,7 @@ res45: Iterable[Sesame#Node] = List(
 ...)
 ```
 
-So here we have explored the data in one remote resource. But what about the documents that resource links to?
+Above we have explored the data in one remote resource. But what about the documents that resource links to?
 
 # Following links 
 
