@@ -225,7 +225,7 @@ connection is functioning and the [bblfish.net](http://bblfish.net/) server is u
 
 ```
 @ val bblDoc = bblReq.asString
-henryDoc: HttpResponse[String] = HttpResponse(
+bblDoc: HttpResponse[String] = HttpResponse(
   """@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix : <http://xmlns.com/foaf/0.1/> .
 @prefix cert: <http://www.w3.org/ns/auth/cert#> .
@@ -242,8 +242,7 @@ henryDoc: HttpResponse[String] = HttpResponse(
 
 <http://b4mad.net/FOAF/goern.rdf#goern>
     a :Person ;
-...
-"""
+..."""
 ```
 
 This following illustration captures the interaction between your computer and the `bblfish.net` server when you make this request. 
@@ -256,15 +255,20 @@ But before we go on writing user interfaces for people who will never know what 
 
 So having downloaded the Turtle, we just need to parse it into a graph and
 point onto a node of the graph (a `PointedGraph`) to explore it. (The turtle parser  is inherited by the `ops` we imported earlier defined in the sesame case
-[in the SesameModule](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/sesame/src/main/scala/org/w3/banana/sesame/SesameModule.scala)
+[in the SesameModule](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/sesame/src/main/scala/org/w3/banana/sesame/SesameModule.scala))
 
 ```Scala
-@ val hg = turtleReader.read(new java.io.StringReader(henryDoc.body), henryDocUrl)
- hg: scala.util.Try[Sesame#Graph] = Success(
-  [(http://axel.deri.ie/~axepol/foaf.rdf#me, http://www.w3.org/1999/02/22-rdf-syntax-ns#type, http://xmlns.com/foaf/0.1/Person) [null], (http://axel.deri.ie/~axepol/foaf.rdf#me, http://xmlns.com/foaf/0.1/name, "Axel Polleres"^^<http://www.w3.org/2001/XMLSchema#string>) [null],
-...]
-@ val pg = PointedGraph[Sesame](URI(henryDocUrl+"#me"),hg.get)
-pg: PointedGraph[Sesame] = org.w3.banana.PointedGraph$$anon$1@6a39a42c
+@  val bg = turtleReader.read(new java.io.StringReader(bblDoc.body), bblUrl.fragmentLess.toString)
+bg: Try[Sesame#Graph] = Success(
+  [(http://axel.deri.ie/~axepol/foaf.rdf#me, http://www.w3.org/1999/02/22-rdf-syntax-ns#type, http://xmlns.com/foaf/0.1/Person) [null], (http://axel.deri.ie/~axepol/foaf.rdf#me, http://xmlns.com/foaf/0.1/name, "Axel Polleres"^^<http://www.w3.org/2001/XMLSchema#string>) [null], ...])
+``` 
+
+Having the graph we construct the pointed graph which we can explore it the way we did  in the previous section. But here we are likely to learn something new,
+since we did not ourselves but this data together.
+  
+```Scala
+@ val pg = PointedGraph[Sesame](bblUrl,hg.get)
+pg: PointedGraph[Sesame] = org.w3.banana.PointedGraph$$anon$1@353b86bc
 @ val knows = pg/foaf.knows
 knows: PointedGraphs[Sesame] = PointedGraphs(
   org.w3.banana.PointedGraph$$anon$1@53dc5333,
@@ -272,16 +276,20 @@ knows: PointedGraphs[Sesame] = PointedGraphs(
 ...)
 ```
 
-Now that we have out PointedGraph we can explore it the way we did 
-in the previous section. But here we are likely to learn something new.
+So now we have the list of people the bblfish knows, we can find
+out how many they are and what their names are.
 
 ```Scala
+@ @ knows.size
+res71: Int = 74
 @ (knows/foaf.name).map(_.pointer)
 res45: Iterable[Sesame#Node] = List(
   "Axel Polleres"^^<http://www.w3.org/2001/XMLSchema#string>,
   "Christoph  Görn"^^<http://www.w3.org/2001/XMLSchema#string>,
 ...)
 ```
+
+So here we have explored the data in one remote resource. But what about the documents that resource links to?
 
 # Following links 
 
