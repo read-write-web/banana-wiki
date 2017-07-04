@@ -522,7 +522,7 @@ First let's unwrap the future to get at its PointedGraphWeb content, which
 means digging in a few layers of this layer monad. (There are more elegant ways to do this)
 
 ```Scala
-@ val pwg = bblFuture.value.get.get
+@ val pgw = bblFuture.value.get.get
 pwg: cache.PointedGraphWeb = PointedGraphWeb(
   http://bblfish.net/people/henry/card,
   org.w3.banana.PointedGraph$$anon$1@34245b5d,
@@ -584,4 +584,14 @@ this much easier, and well on our way to start automating it...
 
 
 # Todo
+
+# References
+
+The concepts presented here in a practical way were part of a presentation at Scala eXchange given in 2014. This presentation and this hack session go well together - indeed I used the pictures from the presentation to illustrate the code here.
+
+([slides here in pdf](http://bblfish.net/tmp/2014/12/08/SecureSocialWeb-Scala_eXchange.pdf))
+
+[![skillsmatter video: building a secure social web using scala and scala-js](https://cloud.githubusercontent.com/assets/124506/5917678/facf06b0-a61f-11e4-97fd-2457f26a46b2.png)](https://skillsmatter.com/skillscasts/5960-building-a-secure-distributed-social-web-using-scala-scala-js)
+
+
 
