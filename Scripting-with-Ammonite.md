@@ -52,22 +52,22 @@ code to allow you to choose which version you prefer to use in a couple of lines
 # Constructing and querying RDF Graphs
 
 Next we are going to build an RDF graph. RDF, stands for Resoure Description Framework, and is used to describe things by relating them to one another. For
-example we could describe the relation of Tim Berners Lee and Vint Cert as a relation `aRb` between them as described in the picture below.
+example we could describe the relation of Tim Berners Lee and Vint Cert as a relation `aRb` between them as shown in the picture below.
 
 ![Mini Graph of TimBl](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/VintCertTimBLHandShake.png)
 
 But if one were just given `aRb` without the picture, how could one know what it means? Where could one look up that information? How could one create new types of relations? This is what RDF - the Resource Description Framework - solves by naming relations and things with URIs, that can, especially if they are `http` or `https` URLs be dereferences from the web - as we will see in the next section - in order to glean more information from them. 
 
-Here for example is a more detailed graph consisting of 4 arrows describing the relation between Tim, Vint Cert, and some other entity described by a long URL 
+Here for example is a more detailed graph consisting of 4 arrows describing the relation between Tim, Vint Cert, and some other entity referred to by a long URL 
 [`<http://bblfish.net/people/henry/card#me>`](http://bblfish.net/people/henry/card#me). 
 
 ![Mini Graph of TimBl](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/TimBLGraph.png)
 
- The relations are not written out in full in the above example, as that would be awkward to read and take up a lot of space. Instead we have relations named `foaf:name` and `foaf:knows` which are composed of two parts seperated by a column: a namespace part 'foaf' which stands for `http://xmlns.com/foaf/0.1/` followed by a string `name` or `knows` which can be concatenated together to form a URL, in this case [`http://xmlns.com/foaf/0.1/name`](http://xmlns.com/foaf/0.1/name) and [`http://xmlns.com/foaf/0.1/name`](http://xmlns.com/foaf/0.1/name). 
+ The relations are not written out in full in the above example, as that would be awkward to read and take up a lot of space. Instead we have relations named `foaf:name` and `foaf:knows` which are composed of two parts separated by a column: a namespace part 'foaf' which stands for `http://xmlns.com/foaf/0.1/` followed by a string `name` or `knows` which can be concatenated together to form a URL, in this case [`http://xmlns.com/foaf/0.1/name`](http://xmlns.com/foaf/0.1/name) and [`http://xmlns.com/foaf/0.1/name`](http://xmlns.com/foaf/0.1/name). 
 
  How do we write this out in banana-rdf?
 
- First we import the classes and functions we need. (I have removed the `@` command line prompt  to make it easier to copy and paste the whole lot in one go)
+ First, we import the classes and functions we need. (I have removed the `@` command line prompt  to make it easier to copy and paste the whole lot in one go)
 
 ```Scala
 import org.w3.banana._
@@ -159,13 +159,13 @@ For a full list of currently integrated serialisers look at the [SesameModule.sc
 
 (Note: It is very likely that there are newer json serialisers than the one that banana-rdf is using that produce much better output than this, as this has not been updated for over a year.)
 
-The attentive reader will have noticed that the Domain Specific Language (DSL) we used above to produce those outputs returned a [PointedGraph](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf/shared/src/main/scala/org/w3/banana/PointedGraph.scala). This is an extreemly simple concept best illustrated by the following diagram, namely just the pair of a graph and a pointer into the graph.
+The attentive reader will have noticed that the Domain Specific Language (DSL) we used above to produce those outputs returned a [PointedGraph](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf/shared/src/main/scala/org/w3/banana/PointedGraph.scala). This is an extremely simple concept best illustrated by the following diagram, namely just the pair of a graph and a pointer into the graph.
 
 ![PointedGraph TimBl](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/TimBLPointedGraph.png)
 
 So in our `timbl` graph, `https://www.w3.org/People/Berners-Lee/card#i` is the node pointed to. 
 
-This PointedGraph view allows us to move to an Object Oriented (OO) view of the graph. And indeed the `PointedGraph` type comes with some operations that are reminischent of the OO dot `.` notation: the `/` for forward relation exploration and the `/-` for backward relation exploration. 
+This PointedGraph view allows us to move to an Object Oriented (OO) view of the graph. And indeed the `PointedGraph` type comes with some operations that are reminiscent of the OO dot `.` notation: the `/` for forward relation exploration and the `/-` for backward relation exploration. 
 
 
 ```Scala
@@ -196,7 +196,7 @@ You can explore more examples by looking at the test suite, starting from [the d
 Building our own graph and querying it is not very informative. 
 So let's try getting some information from the world wide web. 
 
-First let us load a simple Scala wrapper around the Java HTTP library,
+First, let us load a simple Scala wrapper around the Java HTTP library,
 [scalaj-http](https://github.com/scalaj/scalaj-http).
 
 ```Scala
@@ -254,7 +254,7 @@ That sets the request. The ammonite shell shows us the structure of the
 request, consisting of a number of headers, including one which sets
 the name of the `User-Agent` to "scalaj-http". 
 
-Next we make the request and retrieve the value as a string. If your internet
+Next, we make the request and retrieve the value as a string. If your internet
 connection is functioning and the [bblfish.net](http://bblfish.net/) server is up, you should get something like the following result.
 
 ```
@@ -336,15 +336,15 @@ Above we have explored the data in one remote resource. But what about the docum
 
 In the [Friend of a Friend](http://xmlns.com/foaf/spec/) profile we downloaded above, Henry keeps the names of the people he knows, so that 
 
- * if a link goes bad, he can remember whome he intended the link to refer to (in order to fix it if possible)
- * to allow user interfaces to immediately give some information about what he was intending to link to to, without having to downloading more information.
+ * if a link goes bad, he can remember whom he intended the link to refer to (in order to fix it if possible)
+ * to allow user interfaces to immediately give some information about what he was intending to link to, without having to downloading more information.
 
 But most of the information is actually not in his profile - why after all should he keep his profile
 up to date about where his friends live, who their friends are, what their telephone number is, 
 where their blogs are located, etc...? If he did not share responsibility with others in keeping
 data up to date, he would soon have to maintain all the information in the world. 
 
-That is where linked data comes  in: it allows different people and organisations to share the burden of maintaining information. The URLs used in the names of the relations and the names
+That is where linked data comes in: it allows different people and organisations to share the burden of maintaining information. The URLs used in the names of the relations and the names
 of the subjects and objects refer (directly and often indirectly via urls ending in #entities) to documents
 maintained by others - in this case the people Henry knows. 
 
@@ -361,7 +361,7 @@ Let us write this then as little scripts and see how far we get.
 
 ## Fetching and parsing docs
 
-So first of all we'd like to have one simple function that takes a URL and returns the pointed graph of that URL if successful, or some explanation of what went wrong.
+So, first of all, we'd like to have one simple function that takes a URL and returns the pointed graph of that URL if successful or some explanation of what went wrong.
 
 A little bit of playing around and we arrive at this function, that nicely
 gives us all the information we need:
@@ -381,7 +381,7 @@ It keeps all the headers that we received, which may be useful for the extra inf
 
 But it is not quite right. There are two problems both related to the various syntaxes that RDF can be published in:
 
-1. As we follow links on the web we would like to tell the server we come accross what types of mime types we understand so we increase the likeleyhood that it sends one we can parse. For Sesame [we currently can parse](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/sesame/src/main/scala/org/w3/banana/sesame/SesameModule.scala) the following syntaxes for RDF: [RDF/XML](https://www.w3.org/TR/rdf-syntax-grammar/) popular in the early 2000s when XML was popular, [NTriples](https://www.w3.org/TR/n-triples/) the easiest to parse, [Turtle](https://www.w3.org/TR/turtle/) the easiest to read, [json-ld](https://json-ld.org/) popular because of it's encoding in JSON.
+1. As we follow links on the web we would like to tell the server we come across what types of mime types we understand so we increase the likelihood that it sends one we can parse. For Sesame [we currently can parse](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/sesame/src/main/scala/org/w3/banana/sesame/SesameModule.scala) the following syntaxes for RDF: [RDF/XML](https://www.w3.org/TR/rdf-syntax-grammar/) popular in the early 2000s when XML was popular, [NTriples](https://www.w3.org/TR/n-triples/) the easiest to parse, [Turtle](https://www.w3.org/TR/turtle/) the easiest to read, [json-ld](https://json-ld.org/) popular because of it's encoding in JSON.
 
 2. When we receive the response we need to select the parser given the mime type of the document returned by the server.
 
@@ -422,7 +422,7 @@ def fetch(docUrl: Sesame#URI): HttpResponse[scala.util.Try[Sesame#Graph]] = {
 }
 ```
 
-The above functions shows that dealing with the mime types is a little tricky perhaps, but not that difficult. The code was written entirely in the Ammonite shell (and that is perhaps the longest piece of code that makes sense to write there).
+The above functions show that dealing with the mime types is a little tricky perhaps, but not that difficult. The code was written entirely in the Ammonite shell (and that is perhaps the longest piece of code that makes sense to write there).
 
 ```Scala
 @ val bblgrph = fetch(URI("http://bblfish.net/people/henry/card"))
@@ -436,11 +436,11 @@ bblgrph: HttpResponse[Try[org.openrdf.model.Model]] = HttpResponse(
 
 As we will want to fetch a number of graphs by following the `foaf:knows` links, we would like to do this in parallel. 
 
-At this point the [`java.net.HttpURLConnection`](https://docs.oracle.com/javase/8/docs/api/java/net/HttpURLConnection.html) starts showing its age and limitations as it is a blocking call that holds onto a thread. And threads are expensive: over half a MB each. This may not sound like a lot but if you want to open 1000 threads simultaneously you would end up using up half a Gigabyte just in thead overhead, and your system would become very slow as the Virtual Machine will keeep jumping through 1000 threads just waiting to see if any one of them has something to parse, where most of the time they won't - as internet connections are close to 1 billion times slower than fetching information from an internal CPU cache.
+At this point, the [`java.net.HttpURLConnection`](https://docs.oracle.com/javase/8/docs/api/java/net/HttpURLConnection.html) starts showing its age and limitations as it is a blocking call that holds onto a thread. And threads are expensive: over half a MB each. This may not sound like a lot but if you want to open 1000 threads simultaneously you would end up using up half a Gigabyte just in thead overhead, and your system would become very slow as the Virtual Machine will keep jumping through 1000 threads just waiting to see if any one of them has something to parse, where most of the time they won't - as internet connections are close to 1 billion times slower than fetching information from an internal CPU cache.
 
-But in order to avoid brining in too many other concepts at this point let us deal with this the simple way, using threads and Futures. This will be good enough for a demo application, and will provide a stepping stone to the more advanced tools. It will also make sure that you will notice if you start hammering the internet, as your computer will slow down quite quickly.
+But in order to avoid bringing in too many other concepts at this point let us deal with this the simple way, using threads and Futures. This will be good enough for a demo application and will provide a stepping stone to the more advanced tools. It will also make sure that you will notice if you start hammering the internet, as your computer will slow down quite quickly.
 
-So first of all we need an execution context. We don't want to use the `scala.concurrent.ExecutionContext.global`
+So, first of all, we need an execution context. We don't want to use the `scala.concurrent.ExecutionContext.global`
 default one, as we may easily create a lot of threads. So we create our own. (Remember we can later take this code and turn it into a script that we can import in one go.)
 
 ```Scala
@@ -450,7 +450,7 @@ val threadPooleExec = new ThreadPoolExecutor(2,50,20,java.util.concurrent.TimeUn
 implicit lazy val webcontext = ExecutionContext.fromExecutor(threadPooleExec,err=>System.out.println("web error: "+err))
 ```
 
-Next we can create a very simple cache class. This one is not synchronised and should only be used by one thread.
+Next, we can create a very simple cache class. This one is not synchronised and should only be used by one thread.
 It would be easy to create a more battle proof cache with [`java.util.concurrent.atomic.AtomicReference`](http://docs.oracle.com/javase/8/docs/api/java/util/concurrent/atomic/AtomicReference.html), but I'll leave that as an exercise to the reader. This makes the code easier to read.
 
 ```Scala
@@ -496,7 +496,7 @@ class Cache(implicit val ex: ExecutionContext) {
 ```
 
 Because dealing with types such as `Future[HttpResponse[Try[Sesame#Graph]]]` returned by the `Cache.get`
-method, it is easier to compress that information into a PointedGraphWeb, which is a pointedGraph on the web. It conains the name of the graph, and some headers so that one can also work out the version and date of it.
+method, it is easier to compress that information into a PointedGraphWeb, which is a pointedGraph on the web. It contains the name of the graph, and some headers so that one can also work out the version and date of it.
 
 Here is a slightly simplified picture of a PointedGraphWeb in the style of the previous ones:
 
@@ -510,7 +510,7 @@ cache: Cache = ammonite.$sess.cmd162$Cache@64454830
 res164: Future[HttpResponse[Try[org.openrdf.model.Model]]] = Future(<not completed>)
 ```
 
-At this point the `bblFuture` a Future of an HttpResponse is `<not completed>`. But if we wait just a little we get:
+At this point, the `bblFuture` a Future of an HttpResponse is `<not completed>`. But if we wait just a little we get:
 
 ```Scala
 @ bblFuture.isCompleted
@@ -519,7 +519,7 @@ res165: Boolean = true
 
 Good! so we can use the above now to follow the links.
 First let's unwrap the future to get at its PointedGraphWeb content, which
-means digging in a few layers of this layer monad. (There are more elegant ways to do this)
+means digging through a few layers of this layer monad. (There are more elegant ways to do this)
 
 ```Scala
 @ val pgw = bblFuture.value.get.get
@@ -542,13 +542,13 @@ res27: Seq[Future[cache.PointedGraphWeb]] = Stream(
 ```
 
 Here is a picture that shows how the `jump` function (also written `~>`) 
-diffes from the `/` function we used previously.
+differs from the `/` function we used previously.
 
 ![jumping the foaf:knows links](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/TheJumpFunction.png)
 
-Notice that in the first result returned in the image the name of the graph and the graph are still the same. This is because Vint Cerf's is represented by a blank node, and not a URL so there is no place to jump. On the other hand the `bblfish.net` url, there is a place to jump. And that is indeed where we did jump: it is the graph that we have been looking since the last section. But the result of our programmatically run `jump` across all of the other links comes to over 70 new links.
+Notice that in the first result returned in the image the name of the graph and the graph are still the same. This is because Vint Cerf's is represented by a blank node, and not a URL so there is no place to jump. On the other hand the `bblfish.net` url, there is a place to jump. And that is indeed where we did jump: it is the graph that we have been looking at since the last section. But the result of our programmatically run `jump` across all of the other links comes to over 70 new links.
 
-The previous diagram does not show the servers that are jumpted across. As this is very important to understanding the difference between what the semantic web allows and normal siloed data strategies make possible, I have added this to the picture below. Note that we did not jump across just 2 servers, but tried to access something close to 70 different servers in our above jump call!
+The previous diagram does not show the servers that are jumped across. As this is very important to understanding the difference between what the semantic web allows and normal siloed data strategies make possible, I have added this to the picture below. Note that we did not jump across just 2 servers, but tried to access something close to 70 different servers in our above jump call!
 
 ![jumping the foaf:knows links](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/jumpingAround.png)
 
@@ -583,22 +583,22 @@ So it looks like we have quite a lot of failures. That may well
 be. Henry has not had a tool to verify his foaf profile before,
 so he has not been able to keep his profile fresh. 
 
-With these tool we can see that we are well on our way to making 
+With these tools we can see that we are well on our way to making 
 this much easier, and well on our way to start automating it...
 
 
 ## Limitations of the above 
 
-This document is about introducing people to banana-rdf with an example that makes it clear why this framework is useful. with data that spans organisations, just as html hypertext only makes sense if one publishes ones documents in a global space (otherwise word documents would habe been fine).
+This document is about introducing people to banana-rdf with an example that makes it clear why this framework is useful. with data that spans organisations, just as html hypertext only makes sense if one publishes one's documents in a global space (otherwise word documents would have been fine).
 This required going beyond what banana-rdf offers, by tying it into http requests etc... There is a lot more to be said about that.
 
-Still this little experiment has shown quite a few things that would need to be produced by a good web cache library:
+Still, this little experiment has shown quite a few things that would need to be produced by a good web cache library:
   
- * it would need to limit requests to servers in an intelligent way in order to avoid flooding a server and getting the user banned from connecting. There are well known rules for how crawlers should behave, and the code using the cache is getting close to being a crawler
+ * it would need to limit requests to servers in an intelligent way in order to avoid flooding a server and getting the user banned from connecting. There are well-known rules for how crawlers should behave, and the code using the cache is getting close to being a crawler
  * it would be good if that web cache used as few threads as possible (eg. by using an actor framework, such as [akka](http://akka.io/) or akka-http)
- * the web cache should save the downloaded files to the local disk so that restart does not require fetching non expired files again
+ * the web cache should save the downloaded files to the local disk so that restart does not require fetching nonexpired files again
  
-It would be nice to enhance the demonstration with code the rest of the [solid](https://github.com/solid/solid) feature lists such as: 
+It would be nice to enhance the demonstration with the code the rest of the [solid](https://github.com/solid/solid) feature lists such as: 
  
  * Authentication with [WebID](http://webid.info/spec/)
  * Access Control 
@@ -618,7 +618,7 @@ The concepts presented here in a practical way were part of a presentation at Sc
 
 # Todo
 
-* allow the user to choose wether he wishes to use Sesame, Jena or Plantain with by genericsing the code to `Rdf` and allowing the user to choose weather
+* allow the user to choose whether he wishes to use Sesame, Jena or Plantain with by genericizing the code to `Rdf` and allowing the user to choose whether
  `val Rdf = Sesame` or `val Rdf=Jena` ...
 * Save the code to scripts and add them to banana-rdf repo so that one can tweak them more easily - to avoid the cut and paste required above 
 
