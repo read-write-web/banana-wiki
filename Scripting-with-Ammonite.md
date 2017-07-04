@@ -22,9 +22,9 @@ $ mkdir -p ~/.ammonite && curl -L -o ~/.ammonite/predef.sc https://git.io/vHaKQ
 $ sudo curl -L -o /usr/local/bin/amm https://git.io/vQEhd && sudo chmod +x /usr/local/bin/amm && amm
 ```
    
-   but check the latest on [their excellently documented web site](http://ammonite.io/#Ammonite-Shell) - (and update this wiki).   
+   but check the latest on [their excellently documented web site](http://ammonite.io/#Ammonite-Shell) - (and update this wiki if there is a change).   
   
-   For Windows Users check [Ammonite issue 119](https://github.com/lihaoyi/Ammonite/issues/119) and please report any success to us on the gitter channel and if possible a pointer to a howto for it. There are reports that it works well with the latest versions of [Windows 10 Subsystem for Linux](https://en.wikipedia.org/wiki/Windows_Subsystem_for_Linux) that supports Ubuntu 16.04.
+   For Windows Users we have found that it works well with the latest versions of [Windows 10 Subsystem for Linux](https://en.wikipedia.org/wiki/Windows_Subsystem_for_Linux) that supports Ubuntu 16.04 as of the 4th July 2017. (Otherwise check out [Ammonite issue 119](https://github.com/lihaoyi/Ammonite/issues/119))
 
 2) start Ammonite 
 
