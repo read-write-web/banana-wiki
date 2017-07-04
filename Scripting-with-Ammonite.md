@@ -53,7 +53,7 @@ code to allow you to choose which version you prefer to use in a couple of lines
 
 Next we are going to build an RDF graph. A RDF graph can be visualised as just a set of arrows between objects.
 
-![]()
+![Mini Graph of TimBl](../img/TimBLGraph.png)
 
  First we import
 the classes and functions we need. (I have removed the `@` command line prompt  to make it easier to copy and paste the whole lot in one go)
