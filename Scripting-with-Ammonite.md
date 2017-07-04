@@ -150,7 +150,7 @@ res59: Iterable[Sesame#Node] = List(http://bblfish.net/people/henry/card#me, _:v
 
 We can illustrate the above interaction with the following diagram. As you see the graph remains the same after each operation but the pointer moves.
 
-![PointedGraph TimBl](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/followingKnowsInPG.png)
+![following the foaf:knows in timbl pointed graph](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/followingKnowsInPG.png)
 
 Again this is very similar to OO notation when you follow an attribute to get its value, when that operation does not change the state of the Virtual Machine.
 
@@ -159,7 +159,7 @@ You can explore more examples by looking at the test suite, starting from [the d
 # Working with Graphs on the Web
 
 Building our own graph and querying it is not very informative. 
-So let's try getting some information from the world wide web.
+So let's try getting some information from the world wide web. 
 
 First let us load a simple Scala wrapper around the Java HTTP library,
 [scalaj-http](https://github.com/scalaj/scalaj-http).
@@ -168,24 +168,45 @@ First let us load a simple Scala wrapper around the Java HTTP library,
 @ interp.load.ivy("org.scalaj" %% "scalaj-http" % "2.3.0")
 ```
 
-We can now start using banana-rdf on real data.
+We can now start using banana-rdf on real data. We may wonder who this
+bblfish thing is that found in the graph above.
 
 ```Scala
 @ import scalaj.http._
 import scalaj.http._
-@ val henryDocUrl = "http://bblfish.net/people/henry/card"
-henryDocUrl: String = "http://bblfish.net/people/henry/card"
-@  val henryDocReq = Http(henryDocUrl)
-henryDoc: HttpRequest = HttpRequest(
+@ val bblUrl = URI("http://bblfish.net/people/henry/card#me")
+bblUrl: Sesame#URI = http://bblfish.net/people/henry/card#me
+```
+
+The HTTP RFC does not allow one to make requests with fragment
+identifiers, since the [URI RFC](https://tools.ietf.org/html/rfc3986#section-3.5) defines fragment identifiers as
+
+>  The fragment identifier component of a URI allows indirect
+   identification of a secondary resource by reference to a primary
+   resource and additional identifying information.  The identified
+   secondary resource may be some portion or subset of the primary
+   resource, some view on representations of the primary resource, or
+   some other resource defined or described by those representations.  A
+   fragment identifier component is indicated by the presence of a
+   number sign ("#") character and terminated by the end of the URI.
+   
+In our language URIs with fragment identifiers refer to pointed graphs.
+So we remove the fragment before making the HTTP request.   
+
+```Scala
+@ bblUrl.fragmentLess
+res63: Sesame#URI = http://bblfish.net/people/henry/card
+@ val bblReq = Http( bblUrl.fragmentLess.toString )
+bblReq: HttpRequest = HttpRequest(
   "http://bblfish.net/people/henry/card",
   "GET",
   DefaultConnectFunc,
   List(),
   List(("User-Agent", "scalaj-http/1.0")),
   List(
-    scalaj.http.HttpOptions$$$Lambda$112/836829272@2cfc7cdf,
-    scalaj.http.HttpOptions$$$Lambda$113/414197855@29a76f28,
-    scalaj.http.HttpOptions$$$Lambda$114/1232880785@40ad74ca
+    scalaj.http.HttpOptions$$$Lambda$111/614609966@15edb703,
+    scalaj.http.HttpOptions$$$Lambda$113/286344087@5dbab6b0,
+    scalaj.http.HttpOptions$$$Lambda$114/1231971264@4747e542
   ),
   None,
   "UTF-8",
@@ -193,7 +214,17 @@ henryDoc: HttpRequest = HttpRequest(
   QueryStringUrlFunc,
   true
 )
-@ val henryDoc = henryDocReq.asString
+```
+
+That sets the request. The ammonite shell shows us the structure of the
+request, consisting of a number of headers, including one which sets
+the name of the `User-Agent` to "scalaj-http". 
+
+Next we make the request and retrieve the value as a string. If your internet
+connection is functioning and the [bblfish.net](http://bblfish.net/) server is up, you should get something like the following result.
+
+```
+@ val bblDoc = bblReq.asString
 henryDoc: HttpResponse[String] = HttpResponse(
   """@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix : <http://xmlns.com/foaf/0.1/> .
@@ -215,9 +246,13 @@ henryDoc: HttpResponse[String] = HttpResponse(
 """
 ```
 
+This following illustration captures the interaction between your computer and the `bblfish.net` server when you make this request. 
+
+![following the foaf:knows in timbl pointed graph](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/HttpGETReqResponse.png)
+
+
 So now we have downloaded the Turtle, we just need to parse it into a graph and
-point onto a node of the graph (a `PointedGraph`) to explore it. (The turtle parser 
-is inherited by the `ops` we imported earlier defined in the sesame case
+point onto a node of the graph (a `PointedGraph`) to explore it. (The turtle parser  is inherited by the `ops` we imported earlier defined in the sesame case
 [in the SesameModule](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/sesame/src/main/scala/org/w3/banana/sesame/SesameModule.scala)
 
 ```Scala
