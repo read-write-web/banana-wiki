@@ -549,7 +549,7 @@ res27: Seq[Future[cache.PointedGraphWeb]] = Stream(
 Here is a picture that shows how the `jump` function (simplified to `~>`) 
 diffes from the `/` function we used previously.
 
-![following the foaf:knows in timbl pointed graph](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/TheJumpFunction.png)
+![jumping the foaf:knows links](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/TheJumpFunction.png)
 
 Notice that in the first result returned in the image the name of the graph and the graph are still the same. This is because Vint Cerf's is represented by a blank node, and not a URL so there is no place to jump. On the other hand the `bblfish.net` url, there is a place to jump. And that is indeed where we did jump: it is the graph that we have been looking since the last section. But the result of our programmatically run `jump` across all of the other links comes to over 70 new links.
 
