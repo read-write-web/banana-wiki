@@ -541,12 +541,16 @@ res27: Seq[Future[cache.PointedGraphWeb]] = Stream(
   ...)
 ```
 
-Here is a picture that shows how the `jump` function (simplified to `~>`) 
+Here is a picture that shows how the `jump` function (also written `~>`) 
 diffes from the `/` function we used previously.
 
 ![jumping the foaf:knows links](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/TheJumpFunction.png)
 
 Notice that in the first result returned in the image the name of the graph and the graph are still the same. This is because Vint Cerf's is represented by a blank node, and not a URL so there is no place to jump. On the other hand the `bblfish.net` url, there is a place to jump. And that is indeed where we did jump: it is the graph that we have been looking since the last section. But the result of our programmatically run `jump` across all of the other links comes to over 70 new links.
+
+The previous diagram does not show the servers that are jumpted across. As this is very important to understanding the difference between what the semantic web allows and normal siloed data strategies make possible, I have added this to the picture below. Note that we did not jump across just 2 servers, but tried to access something close to 70 different servers in our above jump call!
+
+![jumping the foaf:knows links](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/jumpingAround.png)
 
 
 If a little later we try again we will see that more and more of the futures are completed, we can the start looking at the results to see what the problems with the links may be:
@@ -583,7 +587,25 @@ With these tool we can see that we are well on our way to making
 this much easier, and well on our way to start automating it...
 
 
-# Todo
+## Limitations of the above 
+
+This document is about introducing people to banana-rdf with an example that makes it clear why this framework is useful. with data that spans organisations, just as html hypertext only makes sense if one publishes ones documents in a global space (otherwise word documents would habe been fine).
+This required going beyond what banana-rdf offers, by tying it into http requests etc... There is a lot more to be said about that.
+
+Still this little experiment has shown quite a few things that would need to be produced by a good web cache library:
+  
+ * it would need to limit requests to servers in an intelligent way in order to avoid flooding a server and getting the user banned from connecting. There are well known rules for how crawlers should behave, and the code using the cache is getting close to being a crawler
+ * it would be good if that web cache used as few threads as possible (eg. by using an actor framework, such as [akka](http://akka.io/) or akka-http)
+ * the web cache should save the downloaded files to the local disk so that restart does not require fetching non expired files again
+ 
+It would be nice to enhance the demonstration with code the rest of the [solid](https://github.com/solid/solid) feature lists such as: 
+ 
+ * Authentication with [WebID](http://webid.info/spec/)
+ * Access Control 
+ * Read-Write features given by LDP
+ 
+IT may be that those make more sense in a different project, as they go too far from being directly relevant to banana-rdf. When such libraries do come to appear, it would be good if those projects continued the work here to show how to quickly get going with those libraries using Ammonite. 
+ 
 
 # References
 
@@ -594,4 +616,9 @@ The concepts presented here in a practical way were part of a presentation at Sc
 [![skillsmatter video: building a secure social web using scala and scala-js](https://cloud.githubusercontent.com/assets/124506/5917678/facf06b0-a61f-11e4-97fd-2457f26a46b2.png)](https://skillsmatter.com/skillscasts/5960-building-a-secure-distributed-social-web-using-scala-scala-js)
 
 
+# Todo
+
+* allow the user to choose wether he wishes to use Sesame, Jena or Plantain with by genericsing the code to `Rdf` and allowing the user to choose weather
+ `val Rdf = Sesame` or `val Rdf=Jena` ...
+* Save the code to scripts and add them to banana-rdf repo so that one can tweak them more easily - to avoid the cut and paste required above 
 
