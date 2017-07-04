@@ -492,8 +492,7 @@ class Cache(implicit val ex: ExecutionContext) {
               else Future.successful(this.copy(pointedGraph=PointedGraph[Sesame](pg.pointer, pointedGraph.graph)))
        }
     }
-  }
-}
+ }
 ```
 
 Because dealing with types such as `Future[HttpResponse[Try[Sesame#Graph]]]` returned by the `Cache.get`
