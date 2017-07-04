@@ -299,7 +299,7 @@ bg: Try[Sesame#Graph] = Success(
 Having the graph we construct the pointed graph, allowing us then to explore it as we did in the previous section. But here we are likely to learn something new, since we did not put this data together ourselves.
   
 ```Scala
-@ val pg = PointedGraph[Sesame](bblUrl,hg.get)
+@ val pg = PointedGraph[Sesame](bblUrl,bg.get)
 pg: PointedGraph[Sesame] = org.w3.banana.PointedGraph$$anon$1@353b86bc
 @ (pg/foaf.name).map(_.pointer)
 res72: Iterable[Sesame#Node] = List("Henry J. Story"^^<http://www.w3.org/2001/XMLSchema#string>)
@@ -334,8 +334,7 @@ Above we have explored the data in one remote resource. But what about the docum
 
 ## Purpose and method
 
-In the [Friend of a Friend](http://xmlns.com/foaf/spec/) profile we [downloaded above](http://bblfish.net/people/henry/card), Henry keeps the names of the
-people he knows, so that 
+In the [Friend of a Friend](http://xmlns.com/foaf/spec/) profile we downloaded above, Henry keeps the names of the people he knows, so that 
 
  * if a link goes bad, he can remember whome he intended the link to refer to (in order to fix it if possible)
  * to allow user interfaces to immediately give some information about what he was intending to link to to, without having to downloading more information.
