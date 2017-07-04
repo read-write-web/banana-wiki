@@ -86,7 +86,7 @@ from running the code)
 ```Scala
 @ val foaf = FOAFPrefix[Sesame]
 foaf: FOAFPrefix[Sesame] = Prefix(foaf)
-@  val timbl: PointedGraph[Sesame] = (
+@ val timbl: PointedGraph[Sesame] = (
      URI("https://www.w3.org/People/Berners-Lee/card#i")
         -- foaf.name ->- "Tim Berners-Lee".lang("en")
         -- foaf.plan ->- "Make the Web Great Again"
@@ -113,15 +113,16 @@ _:vint <http://xmlns.com/foaf/0.1/name> "Vint Cerf"^^<http://www.w3.org/2001/XML
 The easiest format for humans to read and write RDF is the [Turtle](https://www.w3.org/TR/turtle/) format, and you can see how the output here is somewhat similar to the Diesel banana-rdf DSL.
 
 ```Scala
-@ turtleWriter.asString(timbl.graph,"")
-res55: Try[String] = Success(
-  """
-<https://www.w3.org/People/Berners-Lee/card#i> <http://xmlns.com/foaf/0.1/knows> <http://bblfish.net/people/henry/card#me> , _:vint ;
+@ turtleWriter.asString(timbl.graph,"").get
+```
+which will return the following Turtle:
+
+```Turtle
+<https://www.w3.org/People/Berners-Lee/card#i> <http://xmlns.com/foaf/0.1/knows>
+                      <http://bblfish.net/people/henry/card#me> , _:vint ;
         <http://xmlns.com/foaf/0.1/plan> "Make the Web Great Again" ;
         <http://xmlns.com/foaf/0.1/name> "Tim Berners-Lee"@en .
-
 _:vint <http://xmlns.com/foaf/0.1/name> "Vint Cerf" .
-"""
 ```
 
 And since nothing is cool nowadays if does not produce JSON, here is the
@@ -133,7 +134,7 @@ jsonldCompactedWriter.asString(timbl.graph,"").get
 
 which will return the following json
 
-```json
+```javascript
 {
   "@graph" : [ {
     "@id" : "_:vint",
