@@ -51,12 +51,17 @@ code to allow you to choose which version you prefer to use in a couple of lines
 
 # Constructing and querying RDF Graphs
 
-Next we are going to build an RDF graph. A RDF graph can be visualised as just a set of arrows between objects.
+Next we are going to build an RDF graph. RDF, stands for Resoure Description Framework, and is used to describe things by relating them to one anther. For
+example we could describe the event the displays a relationship of knowing each other of Tim Berners Lee and Vint Cerf as depicted here:
 
-![Mini Graph of TimBl](../img/TimBLGraph.png)
+![Mini Graph of TimBl](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/VintCertTimBLHandShake.png)
 
- First we import
-the classes and functions we need. (I have removed the `@` command line prompt  to make it easier to copy and paste the whole lot in one go)
+
+RDF displays these arrows by naming them with global identifiers named URIs, though the (http and https) URLs will interest us here most of all.
+
+![Mini Graph of TimBl](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/TimBLGraph.png)
+
+ First we import the classes and functions we need. (I have removed the `@` command line prompt  to make it easier to copy and paste the whole lot in one go)
 
 ```Scala
 import org.w3.banana._
