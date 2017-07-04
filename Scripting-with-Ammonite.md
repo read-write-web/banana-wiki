@@ -86,7 +86,7 @@ from running the code)
 ```Scala
 @ val foaf = FOAFPrefix[Sesame]
 foaf: FOAFPrefix[Sesame] = Prefix(foaf)
-@ val timbl: PointedGraph[Sesame] = (
+@  val timbl: PointedGraph[Sesame] = (
      URI("https://www.w3.org/People/Berners-Lee/card#i")
         -- foaf.name ->- "Tim Berners-Lee".lang("en")
         -- foaf.plan ->- "Make the Web Great Again"
@@ -461,8 +461,6 @@ It would be easy to create a more battle proof cache with [`java.util.concurrent
 case class HttpException(docURL: Sesame#URI, code: Int, headers: Map[String, IndexedSeq[String]]) extends java.lang.Exception
 case class ParseException(docURL: Sesame#URI, parseException: java.lang.Throwable) extends java.lang.Exception
 
-
-
 class Cache(implicit val ex: ExecutionContext) {
    import scala.collection.mutable.Map
    val db = Map[Sesame#URI, Future[HttpResponse[Try[Sesame#Graph]]]]()
@@ -525,19 +523,38 @@ res165: Boolean = true
 ```
 
 Good! so we can use the above now to follow the links.
+First let's unwrap the future to get at its PointedGraphWeb content, which
+means digging in a few layers of this layer monad. (There are more elegant ways to do this)
 
+```Scala
+@ val pwg = bblFuture.value.get.get
+pwg: cache.PointedGraphWeb = PointedGraphWeb(
+  http://bblfish.net/people/henry/card,
+  org.w3.banana.PointedGraph$$anon$1@34245b5d,
+  Map(...))
 ```
-@ val bblFoafs = bblFuture.value.get.get.jump(foaf.knows)
+
+Then we can use the `jump` to get all the other foaf files linked
+to from bblfish's profile. 
+
+```  
+@ val bblFoafs = pgw.jump(foaf.knows)
 res27: Seq[Future[cache.PointedGraphWeb]] = Stream(
   Future(<not completed>),
   Future(<not completed>),
   Future(<not completed>),
   ...)
 ```
-(There are clearly more elegant ways to unwrap a Future...)
 
-If a little later we try again we will see that more and more of the futures are completed,
-we can the start looking at the results to see what the problems with the links may be:
+Here is a picture that shows how the `jump` function (simplified to `~>`) 
+diffes from the `/` function we used previously.
+
+![following the foaf:knows in timbl pointed graph](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/TheJumpFunction.png)
+
+Notice that in the first result returned in the image the name of the graph and the graph are still the same. This is because Vint Cerf's is represented by a blank node, and not a URL so there is no place to jump. On the other hand the `bblfish.net` url, there is a place to jump. And that is indeed where we did jump: it is the graph that we have been looking since the last section. But the result of our programmatically run `jump` across all of the other links comes to over 70 new links.
+
+
+If a little later we try again we will see that more and more of the futures are completed, we can the start looking at the results to see what the problems with the links may be:
 
 ```Scala
 @ val finished = bblFoafs.map(_.value).filter(! _.isEmpty).toList.size
