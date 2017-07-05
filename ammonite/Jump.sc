@@ -116,7 +116,7 @@ class Cache(implicit val ex: ExecutionContext) {
     }
  }
 
-def realFriend(webID: Sesame#URI)(implicit cache: Cache): Future[Seq[(Sesame#URI, Option[PointedGraph[Sesame]])]] = {
+def conscientiousFriend(webID: Sesame#URI)(implicit cache: Cache): Future[Seq[(Sesame#URI, Option[PointedGraph[Sesame]])]] = {
     for{
       friendsFuture: Seq[Future[cache.PointedGraphWeb]] <- cache.getPointed(webID).map(_.jump(foaf.knows))
       triedFriends: Seq[Try[cache.PointedGraphWeb]] <- Future.sequence(
