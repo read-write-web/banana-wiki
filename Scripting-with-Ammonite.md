@@ -21,7 +21,7 @@
     </ol>
 	</details>
 	<details>
-<summary><a href="#conclusion">Conclusion</a></summary> 
+<summary><a href="#conclusion">Appendix</a></summary> 
  <ol>
   <li><a href="#references">References</a>
   <li><a href="#todo">Todo</a>
@@ -651,7 +651,7 @@ In order to be able to test new ideas more quickly without having to copy and pa
 
 You can just download it locally to execute it, or even clone the git wiki repository as mentioned on the [root of this wiki](../wiki).
 
-#Conclusion
+# Appendix
 
 ## References
 
