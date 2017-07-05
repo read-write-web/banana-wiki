@@ -1,17 +1,34 @@
-1. Ammonite
-	1. Why Ammonite?
-	2. Ammonite and Banana-RDF
-3. Constructing and Querying RDF Graphs
-4. Working with Graphs on the Web
-	1. Fetching Data on the Web
-	2. Following Links
-		3. Purpose and method 	
-		4. Fetching and Parsing docs
-		5. Efficiency improvements: Asynchrony and Caching
-		6. Limitiations 
-	7. The Scripts
-5. References
-6. Todo 	
+<details>
+<summary>1.[The Ammonite Shell](#ammonite)</summary>
+	<ol>
+	<li> [Why Ammonite?](#why-ammonite)
+	<li> [Ammonite and Banana-RDF](#ammonite-and-banana-rdf)
+	</ol>
+</details>
+<details>
+<summary>2. [Working with Graphs on the Web](#working-with-graphs-on-the-web)</summary>
+   <ol>
+   <li> [Constructing and Querying RDF Graphs](#constructing-and-querying-rdf-graphs)
+	<li> [Fetching Data on the Web](#fetching-data-on-the-web)
+	<li> [Following Links](#following-links)
+		<ol>
+		 <li> [Purpose and method](#purpose-and-method) 	
+		<li> [Fetching and Parsing docs](#fetching-and-parsing-docs)
+		<li> [Efficiency improvements: Asynchrony and Caching](#efficiency-improvements-asynchrony-and-caching)
+		<li> [Limitiations](#limitiations)
+		<ol> 
+	<li> [The Scripts](#the-scripts)
+	</details>
+	<details>
+<summary>3. [Conclusion](#conclusion)</summary> 
+ <ol>
+  <li>[References](#references)
+  <li>[Todo](#todo)
+ </ol> 	
+</summary>
+</details>
+
+# The Ammonite Shell
 
   This wiki page explains the why and how of banana-rdf in a practical way. This will help you getting started, in an easy step by step fashion using the Ammonite command line, and start making this library real with practical and fun examples of the Semantic Web.
   
@@ -65,7 +82,9 @@ those last imports will download a lot of libraries the first time round. Here w
 _todo: in the near future we will genericise the
 code to allow you to choose which version you prefer to use in a couple of lines of code_
 
-# Constructing and querying RDF Graphs
+# The Web of Data
+
+## Constructing and querying RDF Graphs
 
 Next we are going to build an RDF graph. RDF, stands for Resoure Description Framework, and is used to describe things by relating them to one another. For
 example we could describe the relation of Tim Berners Lee and Vint Cert as a relation `aRb` between them as shown in the picture below.
@@ -207,7 +226,7 @@ Again this is very similar to OO programming when you follow an attribute to get
 
 You can explore more examples by looking at the test suite, starting from [the diesel example](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf-test-suite/shared/src/main/scala/org/w3/banana/diesel/DieselGraphConstructTest.scala).
 
-# Working with Graphs on the Web
+## Working with Graphs on the Web
 
 Building our own graph and querying it is not very informative. 
 So let's try getting some information from the world wide web. 
@@ -346,9 +365,9 @@ res45: Iterable[Sesame#Node] = List(
 
 Above we have explored the data in one remote resource. But what about the documents that resource links to?
 
-# Following links 
+## Following links 
 
-## Purpose and method
+### Purpose and method
 
 In the [Friend of a Friend](http://xmlns.com/foaf/spec/) profile we downloaded above, Henry keeps the names of the people he knows, so that 
 
@@ -375,7 +394,7 @@ As it happened it returned Turtle, and we were then able to use the right parser
 
 Let us write this then as little scripts and see how far we get.
 
-## Fetching and parsing docs
+### Fetching and parsing docs
 
 So, first of all, we'd like to have one simple function that takes a URL and returns the pointed graph of that URL if successful or some explanation of what went wrong.
 
@@ -451,7 +470,7 @@ bblgrph: Try[HttpResponse[Try[org.openrdf.model.Model]]] = Success(
 
 Note that we have wrapped the response in a [Try](http://www.scala-lang.org/api/current/scala/util/Try.html) to catch any connection errors that might occur when we make the HTTP connection. We then wrap any error in our IOException where we place the URL of the page that was requested so that we can later trace those errors back to the URL that caused them.
 
-# Efficiency improvements: Asynchrony and Caching
+## Efficiency improvements: Asynchrony and Caching
 
 As we will want to fetch a number of graphs by following the `foaf:knows` links, we would like to do this in parallel. 
 
@@ -631,7 +650,9 @@ In order to be able to test new ideas more quickly without having to copy and pa
 
 You can just download it locally to execute it, or even clone the git wiki repository as mentioned on the [root of this wiki](../wiki).
 
-# References
+#Conclusion
+
+## References
 
 The concepts presented here in a practical way were part of a presentation at Scala eXchange given in 2014. This presentation and this hack session go well together - indeed I used the pictures from the presentation to illustrate the code here.
 
@@ -640,7 +661,7 @@ The concepts presented here in a practical way were part of a presentation at Sc
 [![skillsmatter video: building a secure social web using scala and scala-js](https://cloud.githubusercontent.com/assets/124506/5917678/facf06b0-a61f-11e4-97fd-2457f26a46b2.png)](https://skillsmatter.com/skillscasts/5960-building-a-secure-distributed-social-web-using-scala-scala-js)
 
 
-# Todo
+## Todo
 
 * allow the user to choose whether he wishes to use Sesame, Jena or Plantain with by genericizing the code to `Rdf` and allowing the user to choose whether
  `val Rdf = Sesame` or `val Rdf=Jena` ...
