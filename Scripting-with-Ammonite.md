@@ -610,7 +610,7 @@ IT may be that those make more sense in a different project, as they go too far 
 
 In order to be able to test new ideas more quickly without having to copy and paste from this wiki page all the time, the code has been placed in a script on this page at [`ammonite/Jump.sc`](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/ammonite/Jump.sc).
 
-You can just download it locally to execute it, or even clone the git wiki repository as mentioned on the [root of this wiki](..).
+You can just download it locally to execute it, or even clone the git wiki repository as mentioned on the [root of this wiki](../wiki).
 
 # References
 
