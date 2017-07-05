@@ -1,13 +1,13 @@
 <details>
-<summary><a href="#ammonite">The Ammonite Shell</a></summary>
+<summary><a href="#the-ammonite-shell">The Ammonite Shell</a></summary>
 	<ol>
 	<li> <a href="#why-ammonite">Why Ammonite?</a>
 	<li> <a href="#ammonite-and-banana-rdf">Ammonite and Banana-RDF</a>
-        <li><a href="#constructing-and-querying-rdf-graphs">Constructing and Querying RDF Graphs</a>
+    <li><a href="#constructing-and-querying-rdf-graphs">Constructing and Querying RDF Graphs</a>
 	</ol>
 </details>
 <details>
-<summary><a href="#working-with-graphs-on-the-web">Working with Graphs on the Web</summary>
+<summary><a href="#the-web-of-data">The Web of Data</summary>
    <ol>       
 	<li><a href="#fetching-data-on-the-web">Fetching Data on the Web</a>
 	<li><a href="#following-links">Following Links"</a>
@@ -227,7 +227,7 @@ You can explore more examples by looking at the test suite, starting from [the d
 # The Web of Data
 
 
-## Working with Graphs on the Web
+# Fetching a graph
 
 Building our own graph and querying it is not very informative. 
 So let's try getting some information from the world wide web. 
