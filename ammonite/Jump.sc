@@ -37,9 +37,12 @@ import scalaj.http._
 val foaf = FOAFPrefix[Sesame] 
 
 import scala.util.{Try,Success,Failure}
-def fetch(docUrl: Sesame#URI): HttpResponse[scala.util.Try[Sesame#Graph]] = {
+
+case class IOException(docURL: Sesame#URI, e: java.lang.Throwable ) extends java.lang.Exception
+def fetch(docUrl: Sesame#URI): Try[HttpResponse[scala.util.Try[Sesame#Graph]]] = {
   assert (docUrl == docUrl.fragmentLess)
-  Http(docUrl.toString)
+  Try( //we want to catch connection exceptions
+   Http(docUrl.toString)
     .header("Accept", "application/rdf+xml,text/turtle,application/ld+json,text/n3;q=0.2")
     .exec { case (code, headers, is) =>
       headers.get("Content-Type")
@@ -65,7 +68,7 @@ def fetch(docUrl: Sesame#URI): HttpResponse[scala.util.Try[Sesame#Graph]] = {
        } flatMap { case (parser,encoding) =>  
         parser.read(new java.io.InputStreamReader(is, encoding), docUrl.toString)
       }
-    }
+    }).recoverWith{case t => Failure(IOException(docUrl,t))}
 }
 
 import scala.concurrent.{Future,ExecutionContext}
@@ -84,7 +87,7 @@ class Cache(implicit val ex: ExecutionContext) {
      db.get(doc) match {
        case Some(f) => f
        case None => {
-         val res = Future( fetch(doc) )
+         val res = Future.fromTry( fetch(doc) )
          db.put( doc, res )
          res
        }

@@ -1,6 +1,8 @@
- This wiki page explains the why and how of banana-rdf in a practical way. This will help you getting started, in an easy step by step fashion using the Ammonite command line, and start making this library real with practical and fun examples of the Semantic Web.
+
+  This wiki page explains the why and how of banana-rdf in a practical way. This will help you getting started, in an easy step by step fashion using the Ammonite command line, and start making this library real with practical and fun examples of the Semantic Web.
   
   We will explain the major concepts along the way in a step by step fashion which you can follow easily on the new Ammonite command line for yourself. The aim is to quickly get you to understand Linked Data by exploring it on the web using the banana-rdf library, so that you can start writing your own shell scripts and move on to larger programs the full value of this framework starts becoming clear.
+    
 
 ## Why Ammonite?
 
@@ -390,9 +392,11 @@ Here is a version that addresses both of these questions:
 
 ```Scala
 import scala.util.{Try,Success,Failure}
-def fetch(docUrl: Sesame#URI): HttpResponse[scala.util.Try[Sesame#Graph]] = {
+case class IOException(docURL: Sesame#URI, e: java.lang.Throwable ) extends java.lang.Exception
+def fetch(docUrl: Sesame#URI): Try[HttpResponse[scala.util.Try[Sesame#Graph]]] = {
   assert (docUrl == docUrl.fragmentLess)
-  Http(docUrl.toString)
+  Try( //we want to catch connection exceptions
+   Http(docUrl.toString)
     .header("Accept", "application/rdf+xml,text/turtle,application/ld+json,text/n3;q=0.2")
     .exec { case (code, headers, is) =>
       headers.get("Content-Type")
@@ -408,29 +412,30 @@ def fetch(docUrl: Sesame#URI): HttpResponse[scala.util.Try[Sesame#Graph]] = {
           case "application/ld+json" => Success(jsonldReader)
           case ct => Failure(new java.lang.Exception("Missing parser for "+ct))
         }
-        parser.map{ p => 
+        parser.map{ p =>
              val attributes = ctype.toList.tail.flatMap(
              _.split(',').map(_.split('=').toList.map(_.trim))
           ).map(avl => (avl.head, avl.tail.headOption.getOrElse(""))).toMap
           val encoding = attributes.get("encoding").getOrElse("utf-8")
           (p, encoding)
         }
-       } flatMap { case (parser,encoding) =>  
+       } flatMap { case (parser,encoding) =>
         parser.read(new java.io.InputStreamReader(is, encoding), docUrl.toString)
       }
-    }
-}
+    }).recoverWith{case t => Failure(IOException(docUrl,t))}
 ```
 
 The above functions show that dealing with the mime types is a little tricky perhaps, but not that difficult. The code was written entirely in the Ammonite shell (and that is perhaps the longest piece of code that makes sense to write there).
 
 ```Scala
 @ val bblgrph = fetch(URI("http://bblfish.net/people/henry/card"))
-bblgrph: HttpResponse[Try[org.openrdf.model.Model]] = HttpResponse(
-  Success(
-    [(http://axel.deri.ie/~axepol/foaf.rdf#me, http://www.w3.org/1999/02/22-rdf-syntax-ns#type, http://xmlns.com/foaf/0.1/Person) [null], 
-     (http://axel.deri.ie/~axepol/foaf.rdf#me, http://xmlns.com/foaf/0.1/name, "Axel Polleres"^^<http://www.w3.org/2001/XMLSchema#string>) [null], ...]
+bblgrph: Try[HttpResponse[Try[org.openrdf.model.Model]]] = Success(
+  HttpResponse(
+    Success(
+      [(http://axel.deri.ie/~axepol/foaf.rdf#me, http://www.w3.org/1999/02/22-rdf-syntax-ns#type, http://xmlns.com/foaf/0.1/Person) [null], (http://axel.deri.ie/~axepol/foaf.rdf#me, http://xmlns.com/foaf/0.1/name, "Axel Polleres"^^<http://www.w3.org/2001/XMLSchema#string>) [null],...]))
 ```
+
+Note that we have wrapped the response in a [Try](http://www.scala-lang.org/api/current/scala/util/Try.html) to catch any connection errors that might occur when we make the HTTP connection. We then wrap any error in our IOException where we place the URL of the page that was requested so that we can later trace those errors back to the URL that caused them.
 
 # Efficiency improvements: Asynchrony and Caching
 
@@ -465,7 +470,7 @@ class Cache(implicit val ex: ExecutionContext) {
      db.get(doc) match {
        case Some(f) => f
        case None => {
-         val res = Future( fetch(doc) )
+         val res = Future.fromTry( fetch(doc) )
          db.put( doc, res )
          res
        }
