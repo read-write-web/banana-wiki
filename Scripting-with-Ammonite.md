@@ -1,31 +1,31 @@
 <details>
-<summary>1.[The Ammonite Shell](#ammonite)</summary>
+<summary><a href="#ammonite">The Ammonite Shell</a></summary>
 	<ol>
-	<li> [Why Ammonite?](#why-ammonite)
-	<li> [Ammonite and Banana-RDF](#ammonite-and-banana-rdf)
+	<li> <a href="#why-ammonite">Why Ammonite?</a>
+	<li> <a href="#ammonite-and-banana-rdf">Ammonite and Banana-RDF</a>
+        <li><a href="#constructing-and-querying-rdf-graphs">Constructing and Querying RDF Graphs</a>
 	</ol>
 </details>
 <details>
-<summary>2. [Working with Graphs on the Web](#working-with-graphs-on-the-web)</summary>
-   <ol>
-   <li> [Constructing and Querying RDF Graphs](#constructing-and-querying-rdf-graphs)
-	<li> [Fetching Data on the Web](#fetching-data-on-the-web)
-	<li> [Following Links](#following-links)
+<summary><a href="#working-with-graphs-on-the-web">Working with Graphs on the Web</summary>
+   <ol>       
+	<li><a href="#fetching-data-on-the-web">Fetching Data on the Web</a>
+	<li><a href="#following-links">Following Links"</a>
 		<ol>
-		 <li> [Purpose and method](#purpose-and-method) 	
-		<li> [Fetching and Parsing docs](#fetching-and-parsing-docs)
-		<li> [Efficiency improvements: Asynchrony and Caching](#efficiency-improvements-asynchrony-and-caching)
-		<li> [Limitiations](#limitiations)
-		<ol> 
-	<li> [The Scripts](#the-scripts)
+		 <li><a href="#purpose-and-method">Purpose and method</a>	
+		<li><a href="#fetching-and-parsing-docs">Fetching and Parsing docs</a>
+		<li><a href="#efficiency-improvements-asynchrony-and-caching">Efficiency improvements: Asynchrony and Caching</a>
+		<li><a href="#limitations">Limitiations</a>
+		</ol> 
+	<li> <a href="#the-scripts">The Scripts</a>
+    </ol>
 	</details>
 	<details>
-<summary>3. [Conclusion](#conclusion)</summary> 
+<summary><a href="#conclusion">Conclusion</a></summary> 
  <ol>
-  <li>[References](#references)
-  <li>[Todo](#todo)
+  <li><a href="#references">References</a>
+  <li><a href="#todo">Todo</a>
  </ol> 	
-</summary>
 </details>
 
 # The Ammonite Shell
@@ -81,9 +81,6 @@ those last imports will download a lot of libraries the first time round. Here w
 
 _todo: in the near future we will genericise the
 code to allow you to choose which version you prefer to use in a couple of lines of code_
-
-# The Web of Data
-
 ## Constructing and querying RDF Graphs
 
 Next we are going to build an RDF graph. RDF, stands for Resoure Description Framework, and is used to describe things by relating them to one another. For
@@ -225,6 +222,10 @@ We can illustrate the above interaction with the following diagram. As you see t
 Again this is very similar to OO programming when you follow an attribute to get its value.
 
 You can explore more examples by looking at the test suite, starting from [the diesel example](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf-test-suite/shared/src/main/scala/org/w3/banana/diesel/DieselGraphConstructTest.scala).
+
+
+# The Web of Data
+
 
 ## Working with Graphs on the Web
 
