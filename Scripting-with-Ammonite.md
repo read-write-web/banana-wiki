@@ -605,7 +605,12 @@ It would be nice to enhance the demonstration with the code the rest of the [sol
  * Read-Write features given by LDP
  
 IT may be that those make more sense in a different project, as they go too far from being directly relevant to banana-rdf. When such libraries do come to appear, it would be good if those projects continued the work here to show how to quickly get going with those libraries using Ammonite. 
- 
+
+## The Script
+
+In order to be able to test new ideas more quickly without having to copy and paste from this wiki page all the time, the code has been placed in a script on this page at [`ammonite/Jump.sc`](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/ammonite/Jump.sc).
+
+You can just download it locally to execute it, or even clone the git wiki repository as mentioned on the [root of this wiki](..).
 
 # References
 

@@ -13,7 +13,7 @@ Run this as follows, from inside a new session of `amm` (Ammonite)
 
 You can then do something like the following:
 
-@ val cache = new Cache(
+@ val cache = new Cache()
 @ val bblFuture = cache.getPointed(URI("http://bblfish.net/people/henry/card#me"))
  
 */ 
