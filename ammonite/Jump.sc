@@ -116,3 +116,17 @@ class Cache(implicit val ex: ExecutionContext) {
     }
  }
 
+def realFriend(webID: Sesame#URI)(implicit cache: Cache): Future[Seq[(Sesame#URI, Option[PointedGraph[Sesame]])]] = {
+    for{
+      friendsFuture: Seq[Future[cache.PointedGraphWeb]] <- cache.getPointed(webID).map(_.jump(foaf.knows))
+      triedFriends: Seq[Try[cache.PointedGraphWeb]] <- Future.sequence(
+        friendsFuture.map (_.transform(tryPgw => Success(tryPgw)))
+      )
+    } yield {
+      triedFriends.collect {
+        case Success(cache.PointedGraphWeb(doc,pg,_)) =>
+        val evidence = (pg/foaf.knows).filter((friend: PointedGraph[Sesame]) => webID == friend.pointer)
+        (doc, evidence.headOption)
+      }
+    }
+}

@@ -1,3 +1,17 @@
+1. Ammonite
+	1. Why Ammonite?
+	2. Ammonite and Banana-RDF
+3. Constructing and Querying RDF Graphs
+4. Working with Graphs on the Web
+	1. Fetching Data on the Web
+	2. Following Links
+		3. Purpose and method 	
+		4. Fetching and Parsing docs
+		5. Efficiency improvements: Asynchrony and Caching
+		6. Limitiations 
+	7. The Scripts
+5. References
+6. Todo 	
 
   This wiki page explains the why and how of banana-rdf in a practical way. This will help you getting started, in an easy step by step fashion using the Ammonite command line, and start making this library real with practical and fun examples of the Semantic Web.
   
