@@ -9,15 +9,15 @@
 <details>
 <summary><a href="#the-web-of-data">The Web of Data</summary>
    <ol>       
-	<li><a href="#fetching-data-on-the-web">Fetching Data on the Web</a>
-	<li><a href="#following-links">Following Links"</a>
+	<li><a href="#fetching-a-graph">Fetching a Graph</a>
+	<li><a href="#following-links">Following Links</a>
 		<ol>
 		 <li><a href="#purpose-and-method">Purpose and method</a>	
 		<li><a href="#fetching-and-parsing-docs">Fetching and Parsing docs</a>
 		<li><a href="#efficiency-improvements-asynchrony-and-caching">Efficiency improvements: Asynchrony and Caching</a>
-		<li><a href="#limitations">Limitiations</a>
+		<li><a href="#limitations">Limitations</a>
 		</ol> 
-	<li> <a href="#the-scripts">The Scripts</a>
+	<li> <a href="#the-script">The Script</a>
     </ol>
 	</details>
 	<details>
@@ -471,7 +471,7 @@ bblgrph: Try[HttpResponse[Try[org.openrdf.model.Model]]] = Success(
 
 Note that we have wrapped the response in a [Try](http://www.scala-lang.org/api/current/scala/util/Try.html) to catch any connection errors that might occur when we make the HTTP connection. We then wrap any error in our IOException where we place the URL of the page that was requested so that we can later trace those errors back to the URL that caused them.
 
-## Efficiency improvements: Asynchrony and Caching
+### Efficiency improvements: Asynchrony and Caching
 
 As we will want to fetch a number of graphs by following the `foaf:knows` links, we would like to do this in parallel. 
 
@@ -626,7 +626,7 @@ With these tools we can see that we are well on our way to making
 this much easier, and well on our way to start automating it...
 
 
-## Limitations of the above 
+### Limitations 
 
 This document is about introducing people to banana-rdf with an example that makes it clear why this framework is useful. with data that spans organisations, just as html hypertext only makes sense if one publishes one's documents in a global space (otherwise word documents would have been fine).
 This required going beyond what banana-rdf offers, by tying it into http requests etc... There is a lot more to be said about that.
