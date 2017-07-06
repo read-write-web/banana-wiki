@@ -14,6 +14,7 @@
 		<ol>
 		 <li><a href="#purpose-and-method">Purpose and method</a>	
 		<li><a href="#fetching-and-parsing-docs">Fetching and Parsing docs</a>
+		<li><a href="#exploring-a-remotely-loaded-graph">Exploring a remotely loaded graph</a>
 		<li><a href="#efficiency-improvements-asynchrony-and-caching">Efficiency improvements: Asynchrony and Caching</a>
 		<li><a href="#limitations">Limitations</a>
 		</ol> 
@@ -462,7 +463,7 @@ def fetch(docUrl: Sesame#URI): Try[HttpResponse[scala.util.Try[Sesame#Graph]]] =
 The above functions show that dealing with the mime types is a little tricky perhaps, but not that difficult. The code was written entirely in the Ammonite shell (and that is perhaps the longest piece of code that makes sense to write there).
 
 ```Scala
-@ val bblgrph = fetch(URI("http://bblfish.net/people/henry/card"))
+@ val bblgrph = fetch(bblUrl.fragmentLess)
 bblgrph: Try[HttpResponse[Try[org.openrdf.model.Model]]] = Success(
   HttpResponse(
     Success(
@@ -470,6 +471,70 @@ bblgrph: Try[HttpResponse[Try[org.openrdf.model.Model]]] = Success(
 ```
 
 Note that we have wrapped the response in a [Try](http://www.scala-lang.org/api/current/scala/util/Try.html) to catch any connection errors that might occur when we make the HTTP connection. We then wrap any error in our IOException where we place the URL of the page that was requested so that we can later trace those errors back to the URL that caused them.
+
+### Exploring a remotely loaded graph
+
+We may be interested to know how many friends bblfish has written up in his profile. For that we need to first get a PointedGraph. (I have specified the types of each object returned below in order to make reading easier.)
+
+```Scala
+val bblfish: PointedGraph[Sesame] = PointedGraph[Sesame](bblUrl,bblgrph.get.body.get)
+val bblFriends: PointedGraphs[Sesame] = bblfish/foaf.knows
+val friendIds: Iterable[Sesame#Node] = bblFriends.map(_.pointer)
+```
+
+As an interesting side note, [Ammonite provides some interesting short
+hand](http://ammonite.io/#Extensions) to make the parallel between programming with functions and (programming with pipes in the unix shell)[http://linuxcommand.org/lts0060.php] more apparent. One can
+think of a the above `map` function as taking the output of one process, and
+piping it into the `(x: PointedGraph[Rdf]) => x.pointer` function. So that one can rewrite the last two lines as 
+
+```Scala
+ val friendIds = bblfish/foaf.knows | ( _.pointer )
+ ```
+
+We'll get back to more of that later.
+
+Once we have these ids, we can then find out a few things from it, 
+such as what types of nodes we have there.
+
+```Scala
+@ friendIds.size
+res52: Int = 74
+@ val nodeTypes = friendIds.groupBy{ (u: Sesame#Node) => nodeW(u).fold[String](uri =>"uri", bnode=>"bnode", lit=>"literal") }
+res50: Map[String, Iterable[Sesame#Node]] = Map(
+  "uri" -> List(
+    http://axel.deri.ie/~axepol/foaf.rdf#me
+    ...))    
+```
+
+The `nodeTypes` is quite a large data structure, so it is easier
+to browse it with `browse(nodeTypes)` in Ammonite: this will open a viewer
+so that you can step through the pages without clogging up your 
+shell history.
+
+We can also query that data structure programmatically like this:
+
+```
+@ nodeTypes("uri").size
+res55: Int = 60
+
+hjs-banana-rdf.wiki@ nodeTypes("bnode").size
+res56: Int = 14
+```
+
+So there are 14 people listed as being known by bblfish that are refered to by a blank node, that is without a direct WebID to allow a client to easily jump to more information. We can think of those nodes as requiring a description to allow us to identify who is being spoken of. All we have is the information in that graph.
+
+But we may have missed out on something. The [foaf ontology](http://xmlns.com/foaf/0.1/] also alows people to express memberships of groups. How many groups does bblfish belong to? Let us see...
+
+```Scala
+@ val groupIds =  bblfish/-foaf.member | ( _.pointer )
+groupIds: Iterable[Sesame#Node] = List()
+@ (bblfish/foaf.holdsAccount | ( _.pointer )).size
+res88: Int = 10
+```
+
+In the first request we are looking if there is a `foaf.member` from a group to bblfish in that document (none it seems). And in the second we are looking how many accounts bblfish holds (10). So this gives an overview of exploring
+a graph just by following links inside the graph. 
+
 
 ### Efficiency improvements: Asynchrony and Caching
 
@@ -558,7 +623,7 @@ res165: Boolean = true
 
 Good! so we can use the above now to follow the links.
 First let's unwrap the future to get at its PointedGraphWeb content, which
-means digging through a few layers of this layer monad. (There are more elegant ways to do this)
+means digging through a few layers of this layer monad. 
 
 ```Scala
 @ val pgw = bblFuture.value.get.get
@@ -568,10 +633,13 @@ pwg: cache.PointedGraphWeb = PointedGraphWeb(
   Map(...))
 ```
 
+Though we may do this from time to time on the command line, we don't really want our programs to block waiting for a future to be finished. 
+
+
 Then we can use the `jump` to get all the other foaf files linked
 to from bblfish's profile. 
 
-```  
+```Scala  
 @ val bblFoafs = pgw.jump(foaf.knows)
 res27: Seq[Future[cache.PointedGraphWeb]] = Stream(
   Future(<not completed>),
@@ -587,7 +655,11 @@ differs from the `/` function we used previously.
 
 Notice that in the first result returned in the image the name of the graph and the graph are still the same. This is because Vint Cerf's is represented by a blank node, and not a URL so there is no place to jump. On the other hand the `bblfish.net` url, there is a place to jump. And that is indeed where we did jump: it is the graph that we have been looking at since the last section. But the result of our programmatically run `jump` across all of the other links comes to over 70 new links.
 
-The previous diagram does not show the servers that are jumped across. As this is very important to understanding the difference between what the semantic web allows and normal siloed data strategies make possible, I have added this to the picture below. Note that we did not jump across just 2 servers, but tried to access something close to 70 different servers in our above jump call!
+The previous diagram does not show the servers that are jumped across. As this is very important to understanding the difference between what the semantic web allows and normal siloed data strategies make possible, I have added this to the picture below. Note that we did not jump across just 2 servers, but tried to access something close to 
+
+
+
+70 different servers in our above jump call!
 
 ![jumping the foaf:knows links](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/jumpingAround.png)
 
