@@ -738,7 +738,7 @@ It is intersting to look at what this looks like if one takes the Unix Pipes ana
 import $exec.FutureWrapper
 cache.getPointed(webId) | (_.jump(foaf.knows)) || sequenceNoFail | (_ |?| { 
    case Success(cache.PointedGraphWeb(doc,pg,_)) =>
-       val evidence = (pg/foaf.knows).filter((friend: PointedGraph[Sesame]) => webId == friend.pointer)
+       val evidence = (pg/foaf.knows).filter((friend: PointedGraph[Sesame]) => webId == friend.pointer && friend.pointer.isUri)
        (doc, evidence.headOption)
    })
 ```
