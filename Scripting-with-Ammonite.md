@@ -16,6 +16,7 @@
 		<li><a href="#fetching-and-parsing-docs">Fetching and Parsing docs</a>
 		<li><a href="#exploring-a-remotely-loaded-graph">Exploring a remotely loaded graph</a>
 		<li><a href="#efficiency-improvements-asynchrony-and-caching">Efficiency improvements: Asynchrony and Caching</a>
+		<li><a href="#finding-the-conscientious-friends">Finding the Conscientious Friends</a>
 		<li><a href="#limitations">Limitations</a>
 		</ol> 
 	<li> <a href="#the-script">The Script</a>
@@ -458,6 +459,7 @@ def fetch(docUrl: Sesame#URI): Try[HttpResponse[scala.util.Try[Sesame#Graph]]] =
         parser.read(new java.io.InputStreamReader(is, encoding), docUrl.toString)
       }
     }).recoverWith{case t => Failure(IOException(docUrl,t))}
+}
 ```
 
 The above functions show that dealing with the mime types is a little tricky perhaps, but not that difficult. The code was written entirely in the Ammonite shell (and that is perhaps the longest piece of code that makes sense to write there).
@@ -697,6 +699,53 @@ so he has not been able to keep his profile fresh.
 With these tools we can see that we are well on our way to making 
 this much easier, and well on our way to start automating it...
 
+### Finding the Conscientious Friends
+
+Conscientious friends are friends who link back to one. This has not
+been easy until now as there have been no good UIs to automate this or to remind one to update ones profile. The aim of this document is to make it easy for people to automate all these processes, including the notification of broken links to help maintain the linked data web in good form.
+
+So to do this we need to
+ 1. jump on the foaf.knows relation for the WebID we are interested in
+ 2. for each of the remotely jumped to graphs select those nodes that have a `foaf.knows` relation back to the initial WebId. 
+
+Scala's type system comes in very helpful when writing code like this.
+Here is the answer we came up with:
+
+```scala
+def sequenceNoFail[A](seq :Seq[Future[A]]): Future[Seq[Try[A]]] =
+     Future.sequence{ seq.map(_.transform(Success(_)))}
+
+def conscientiousFriend(webID: Sesame#URI)(implicit cache: Cache): Future[Seq[(Sesame#URI, Option[PointedGraph[Sesame]])]] = {
+    for{
+      friendsFuture: Seq[Future[cache.PointedGraphWeb]] <- cache.getPointed(webID).map(_.jump(foaf.knows))  //[1]  
+      triedFriends: Seq[Try[cache.PointedGraphWeb]] <- sequenceNoFail(friendsFuture)  //[2]
+      )
+    } yield {
+      triedFriends.collect { [3]
+        case Success(cache.PointedGraphWeb(doc,pg,_)) =>
+        val evidence = (pg/foaf.knows).filter((friend: PointedGraph[Sesame]) => webID == friend.pointer && friend.pointer.isUri)
+        (doc, evidence.headOption)
+      }
+    }
+}
+```
+
+In the line marked `[1]` we jump to each remote `foaf.knows`. In line `[2]` we transform the Seq of Futures into a `Future[Try[Seq]]` which will always succeed ( we don't want our function to fail because one server is down ). Finally in the block `[3]` we filter out only the succesful requests, and see if the that pointed graph has the desired `foaf.knows` relation to the original WebID. We return the URL found as evidence so that the caller knows where to look, if at all.
+
+It is intersting to look at what this looks like if one takes the Unix Pipes analogy of functions seriously.
+
+```Scala
+import $exec.FutureWrapper
+cache.getPointed(webId) | (_.jump(foaf.knows)) || sequenceNoFail | (_ |?| { 
+   case Success(cache.PointedGraphWeb(doc,pg,_)) =>
+       val evidence = (pg/foaf.knows).filter((friend: PointedGraph[Sesame]) => webId == friend.pointer)
+       (doc, evidence.headOption)
+   })
+```
+
+So here we can think of `cache.getPointed(webId)` as returning a Future `PointedGraphWeb`. This `PointedWebGraph` web is streamed using `|`  (in the future) to the jump function, which outputs a `Seq[Future[PointedGraphWeb]]`. This is the passed (in the future) via '||' (ie. `flatMap`) to the `sequenceNoFail` method, which transforms that output into a new Future of Sequences which replaces the previous ones, placing us now at the outer edge of the future, as all the previous futures have to be finished before the results of that outer future can be collected with `|?|`. 
+
+We may want to improve this by following `rdfs:seeAlso` links or links to `foaf:Groups` as those may be where the return links have been placed.
 
 ### Limitations 
 

@@ -1,3 +1,5 @@
+import $exec.FutureWrapper
+
 /**
 This is an ammonite script file that goes with the wiki page
 at ../Scripting-with-Ammonite.md
@@ -115,6 +117,9 @@ class Cache(implicit val ex: ExecutionContext) {
        }
     }
  }
+
+def sequenceNoFail[A](seq :Seq[Future[A]]): Future[Seq[Try[A]]] = 
+     Future.sequence{ seq.map(_.transform(Success(_)))}
 
 def conscientiousFriend(webID: Sesame#URI)(implicit cache: Cache): Future[Seq[(Sesame#URI, Option[PointedGraph[Sesame]])]] = {
     for{
