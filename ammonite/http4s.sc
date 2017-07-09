@@ -1,3 +1,19 @@
+/**
+  * you can run this from ammonite shell with:
+  
+     import $exec.http4s
+     val gf2 = web.goodFriend(URI("http://bblfish.net/people/henry/card#me"))
+     implicit val strat = fs2.Strategy.fromFixedDaemonPool(3)
+     //implicit val F = fs2.Async[fs2.Task]
+     val web = new Web()
+     val gf2 = web.goodFriend(URI("http://bblfish.net/people/henry/card#me"))
+     val tsk = fs2.concurrent.join(50)(gf2)
+     tsk.runLog
+     val goodFriendTask = tsk.runLog
+     goodFriendTask.unsafeRunAsyncFuture
+*/
+     
+
 import coursier.core.Authentication, coursier.MavenRepository
 import coursier.core.Authentication, coursier.MavenRepository
 interp.repositories() ++= Seq(MavenRepository(
@@ -62,17 +78,22 @@ object Decoders {
 }
 
 object Web {
+   import org.http4s
+   implicit class UriW(val uri: http4s.Uri)  extends AnyVal {
+         def fragmentLess: http4s.Uri = 
+            if (uri.fragment.isEmpty) uri else uri.copy(fragment=None)
+    }
+}
+
+
+class Web(implicit val strat: fs2.Strategy) {
    import scala.util.control.NoStackTrace
    import scala.util.{Either,Right,Left}
    import org.http4s 
    import fs2.util.Attempt
+   import Web._
 
-    implicit class UriW(val uri: http4s.Uri)  extends AnyVal {
-         def fragmentLess: http4s.Uri = 
-            if (uri.fragment.isEmpty) uri else uri.copy(fragment=None)
-    }
-
-   case class HTTPException(on: http4s.Uri, exception: java.lang.Throwable) extends RuntimeException with NoStackTrace with Product with Serializable
+    case class HTTPException(on: http4s.Uri, exception: java.lang.Throwable) extends RuntimeException with NoStackTrace with Product with Serializable
 
    def toPointedTask(point: Rdf#Node, task: fs2.Task[Attempt[Rdf#Graph]]) = task.map(att=>att.map(g=>PointedGraph[Rdf](point, g)))
 
@@ -85,8 +106,13 @@ object Web {
                      headers=Headers(
                         Header("Accept","application/rdf+xml,text/turtle,application/ld+json,text/n3;q=0.2"))
                 )
-       val graphTsk = httpClient.fetchAs[Rdf#Graph](req).handleWith({ case err => fs2.Task.fail(HTTPException(u,err)) }).attempt  
-       toPointedTask(uri,graphTsk)
+       val graphTsk = fs2.Task({
+               println(s"${Thread.currentThread.getName} to fetch $uri")
+               emptyGraph
+       }).async.flatMap( _ =>
+               httpClient.fetchAs[Rdf#Graph](req).handleWith({ case err => fs2.Task.fail(HTTPException(u,err)) })
+       ).attempt  
+       toPointedTask(uri,graphTsk).async
    }
 
   def jump(pg: PointedGraph[Rdf], rel: Rdf#URI): fs2.Stream[fs2.Task,Attempt[PointedGraph[Rdf]]] = {
@@ -99,11 +125,11 @@ object Web {
    
    val foaf = FOAFPrefix[Rdf]
    def goodFriend(uri: Rdf#URI) = {
-      fs2.Stream.eval(getPointed(uri)).flatMap(_ match {
+      fs2.Stream.eval(getPointed(uri)).map(_ match {
            case Right(pg) => jump(pg,foaf.knows) 
            case l@Left(e) => fs2.Stream(l) 
       })
    }
+   
 }
-
 
