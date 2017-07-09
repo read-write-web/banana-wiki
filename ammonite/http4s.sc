@@ -1,8 +1,10 @@
 /**
+  * Good documentation for fs2 "My fs2 (was scalaz-stream) User Notes" at
+  *  https://aappddeevv.gitbooks.io/test_private_book/details
+  *
   * you can run this from ammonite shell with:
   
      import $exec.http4s
-     implicit val strat = fs2.Strategy.fromFixedDaemonPool(3)
      //implicit val F = fs2.Async[fs2.Task]
      val web = new Web()
      val gf2 = web.goodFriend(URI("http://bblfish.net/people/henry/card#me"))
@@ -28,8 +30,11 @@ import Sesame.ops._
 
 import $ivy.`org.http4s::http4s-dsl:0.17.0-M1`
 import $ivy.`org.http4s::http4s-blaze-client:0.17.0-M1`, org.http4s.client.blaze._
+import java.util.concurrent.ThreadPoolExecutor
 
-val httpClient = PooledHttp1Client()
+//testing concurrency
+implicit val strat = fs2.Strategy.fromFixedDaemonPool(8)
+
 val Rdf = Sesame
 
 object RdfMediaTypes {
@@ -51,6 +56,7 @@ object Decoders {
 
    private def decoderForRdfReader(mt: MediaRange, mts: MediaRange*)(reader: RDFReader[Rdf,Try,_], errmsg: String ) = 
     EntityDecoder.decodeBy[Rdf#Graph](mt,mts: _*){ msg =>
+       println(s"decoding in ${Thread.currentThread.getName} fetched ")
        EitherT(
           msg.as[String].flatMap[Either[DecodeFailure,Rdf#Graph]]{ s =>
              fs2.Task.delay(
@@ -89,6 +95,12 @@ class Web(implicit val strat: fs2.Strategy) {
    import org.http4s 
    import fs2.util.Attempt
    import Web._
+   
+   val threadPooleExec = new ThreadPoolExecutor(2,3,20,java.util.concurrent.TimeUnit.SECONDS,new java.util.concurrent.LinkedBlockingQueue[Runnable])
+   val dbc =org.http4s.client.blaze.BlazeClientConfig.defaultConfig
+   val minBlazeConfig = dbc.copy(customExecutor=Some(threadPooleExec))
+   val httpClient = org.http4s.client.middleware.FollowRedirect(4)(PooledHttp1Client(50,config=minBlazeConfig))
+
 
     case class HTTPException(on: http4s.Uri, exception: java.lang.Throwable) extends RuntimeException with NoStackTrace with Product with Serializable
 
