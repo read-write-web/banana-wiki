@@ -2,15 +2,12 @@
   * you can run this from ammonite shell with:
   
      import $exec.http4s
-     val gf2 = web.goodFriend(URI("http://bblfish.net/people/henry/card#me"))
      implicit val strat = fs2.Strategy.fromFixedDaemonPool(3)
      //implicit val F = fs2.Async[fs2.Task]
      val web = new Web()
      val gf2 = web.goodFriend(URI("http://bblfish.net/people/henry/card#me"))
-     val tsk = fs2.concurrent.join(50)(gf2)
-     tsk.runLog
-     val goodFriendTask = tsk.runLog
-     goodFriendTask.unsafeRunAsyncFuture
+     val friendTask = gf2.runLog
+     val friendFut = friendTask.unsafeRunAsyncFuture
 */
      
 
@@ -125,7 +122,7 @@ class Web(implicit val strat: fs2.Strategy) {
    
    val foaf = FOAFPrefix[Rdf]
    def goodFriend(uri: Rdf#URI) = {
-      fs2.Stream.eval(getPointed(uri)).map(_ match {
+      fs2.Stream.eval(getPointed(uri)).flatMap(_ match {
            case Right(pg) => jump(pg,foaf.knows) 
            case l@Left(e) => fs2.Stream(l) 
       })
