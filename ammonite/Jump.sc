@@ -1,4 +1,4 @@
-import $exec.FutureWrapper
+//import $exec.FutureWrapper
 
 /**
 This is an ammonite script file that goes with the wiki page

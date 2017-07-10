@@ -1,6 +1,10 @@
 /**
   * Good documentation for fs2 "My fs2 (was scalaz-stream) User Notes" at
   *  https://aappddeevv.gitbooks.io/test_private_book/details
+  * see also https://www.infoq.com/presentations/funnel-distributed-monitoring
+  * API docs are at:
+      fs2: https://github.com/functional-streams-for-scala/fs2
+      http4s: http://http4s.org/
   *
   * you can run this from ammonite shell with:
   
@@ -118,8 +122,8 @@ class Web(implicit val strat: fs2.Strategy) {
        val graphTsk = fs2.Task({
                println(s"${Thread.currentThread.getName} to fetch $uri")
                emptyGraph
-       }).async.flatMap( _ =>
-               httpClient.fetchAs[Rdf#Graph](req).handleWith({ case err => fs2.Task.fail(HTTPException(u,err)) })
+       }).flatMap( _ =>
+               httpClient.fetchAs[Rdf#Graph](req).async.handleWith({ case err => fs2.Task.fail(HTTPException(u,err)) })
        ).attempt  
        toPointedTask(uri,graphTsk).async
    }
