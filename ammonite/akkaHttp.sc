@@ -7,6 +7,7 @@ interp.repositories() ++= Seq(MavenRepository(
 @
 
 import scala.concurrent.ExecutionContext
+import com.typesafe.config._
 
 import $ivy.`org.w3::banana-sesame:0.8.4-SNAPSHOT`
 import org.w3.banana._
@@ -15,7 +16,8 @@ import org.w3.banana.sesame.Sesame
 import Sesame._
 import Sesame.ops._
 
-import $ivy.`com.typesafe.akka::akka-http:10.0.9` 
+import $ivy.`com.typesafe.akka::akka-http:10.0.9`
+//import $ivy.`ch.qos.logback:logback-classic:1.2.3`
 
 import akka.actor.ActorSystem
 import akka.actor.SupervisorStrategy
@@ -25,12 +27,22 @@ import akka.http.scaladsl.model.{Uri=>AkkaUri,_}
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings,Supervision,_}
 import akka.stream.scaladsl._
 import akka.{ NotUsed, Done }
+import akka.event.Logging
 
 import scala.concurrent.Future
 import scala.util.control.NoStackTrace 
+import scala.util.control.NonFatal
 import scala.util.{Try,Success,Failure}
-
-implicit val system = ActorSystem()
+//see http://doc.akka.io/docs/akka/snapshot/scala/general/configuration.html#listing-of-the-reference-configuration
+val shortScriptConf = ConfigFactory.parseString("""
+   |akka {
+   |   loggers = ["akka.event.Logging$DefaultLogger"]
+   |   logging-filter = "akka.event.DefaultLoggingFilter"
+   |   loglevel = "WARNING"
+   |}
+ """.stripMargin)
+implicit val system = ActorSystem("akka_ammonite_script",shortScriptConf)
+val log = Logging(system.eventStream, "banana-rdf")
 implicit val materializer = ActorMaterializer(
                 ActorMaterializerSettings(system).withSupervisionStrategy(Supervision.resumingDecider))
 implicit val ec: ExecutionContext = system.dispatcher
@@ -63,7 +75,6 @@ object RdfMediaTypes {
               case `application/rdf+xml` => rdfXMLReader
               case `application/ntriples` => ntriplesReader
               case `application/ld+json` => jsonldReader
-              //case _ => throw NoUnmarshallerException(entity.contentType,"Don't know how to transform such a mime type into an RDFGraph")  
            }
            reader.read(new java.io.StringReader(string),requestUri.toString) match {
             case Success(g) => g
@@ -77,8 +88,11 @@ object RdfMediaTypes {
 }
 
 object Web {
-   
-    case class HTTPException(on: AkkaUri, msg: String) extends java.lang.RuntimeException with NoStackTrace with Product with Serializable
+    trait WebException extends java.lang.RuntimeException with NoStackTrace with Product with Serializable
+    case class HTTPException(resourceUri: String, msg: String) extends WebException
+    case class ConnectionException(resourceUri: String, e: Throwable) extends WebException
+    case class NodeTranslationException(resourceUri: Rdf#Node, e: Throwable) extends WebException
+    case class ParseException(resourceUri: String, status: StatusCode, responseHeaders: Seq[HttpHeader],e: Throwable) extends WebException
 
    implicit class UriW(val uri: AkkaUri)  extends AnyVal {
          def fragmentLess: AkkaUri = 
@@ -102,42 +116,43 @@ object Web {
 
 
    implicit class HttResPG(val h: HttpRes[PointedGraph[Rdf]]) extends AnyVal {
-    def jump(rel: Sesame#URI)(implicit web: Web): Seq[Future[HttpRes[PointedGraph[Rdf]]]] =
-          (h.content/rel).toSeq.map{ pg =>
-              if (h.content.pointer.isURI) web.pointedGET(AkkaUri(pg.pointer.toString))
+    def jump(rel: Sesame#URI)(implicit web: Web): List[Future[HttpRes[PointedGraph[Rdf]]]] =
+          (h.content/rel).toList.map{ pg =>
+              if (h.content.pointer.isURI) try {
+                   web.pointedGET(AkkaUri(pg.pointer.toString))
+                 } catch {
+                   case NonFatal(e) => Future.failed(NodeTranslationException(h.content.pointer,e))
+                 }
               else Future.successful(h.copy(content=pg))
        }
     } 
-
-    def reduceFlowFutureTry[X](n: Int=1)(log: X=>String= {a:X=>""}): Flow[Future[X],Try[X],_] =
-       Flow[Future[X]].mapAsyncUnordered(n){ fx =>
-           println("smushing a future")
-           fx.transform{t=>
-             t match {
-               case Success(x) => println(log(x))
-               case Failure(e) => println("t was a failure:"+e)
-             }
-             Success(t)
-           }
-       }
 
     import scala.collection.immutable 
     def uriSource(uris: AkkaUri*): Source[AkkaUri,NotUsed] =  
          Source(immutable.Seq(uris:_*).to[collection.immutable.Iterable])
 
+   def neverFail[X](fut: Future[X]): Future[Try[X]] = fut.transform(Success(_))
+   def reduceFlowFuture[X](n: Int=1) = Flow[Future[X]].mapAsyncUnordered(n){f: Future[X] =>
+              log.info("received a future. Will now reapper as object in Stream")
+              f
+   }
 
    def goodFriendGraph(me: AkkaUri) = {
        import scala.collection.immutable
        val mine = uriSource(me)
-       val flowJumpId = mine.mapAsync(1)(uri => web.pointedGET(uri))
-       val flowJumpFutKn = flowJumpId.mapConcat{ hrpg => hrpg.jump(foaf.knows).to[immutable.Iterable] }
-       val flowJumpTryKn = flowJumpFutKn.via(reduceFlowFutureTry[Web.HttpRes[PointedGraph[Rdf]]](50)(res=>"smushing ${res.origin}"))
+       val sourceJumpId = mine.mapAsync(1){uri => log.info("initial jump id"); web.pointedGET(uri)}
+       val sourceJumpFutKn = sourceJumpId.mapConcat{ hrpg => 
+           val seqFut = hrpg.jump(foaf.knows).to[immutable.Iterable] 
+           log.info(s"jumped <${me.toString}>/foaf.knows and received a sequence of ${seqFut.size} Futures")
+           seqFut.map(neverFail(_))
+       }
+       val sourceJumpTryKn = sourceJumpFutKn.via(reduceFlowFuture(50))
        val sinkFold2 = Sink.fold[List[Try[Web.HttpRes[PointedGraph[Rdf]]]],
                                  Try[Web.HttpRes[PointedGraph[Rdf]]]](List()){ case (l,t)=>
-                                   println(s"in Sink.fold. Appending $t to $l")
+                                   log.info(s"in Sink.fold. Appending $t to $l")
                                    t::l
                                   }
-       flowJumpTryKn.toMat(sinkFold2)(Keep.right)
+       sourceJumpTryKn.toMat(sinkFold2)(Keep.right)
    }
  
 }
@@ -152,16 +167,22 @@ class Web(implicit ec: ExecutionContext) {
    //see: https://github.com/akka/akka-http/issues/195
    def httpRequire(req: HttpRequest, maxRedirect: Int = 4)(implicit 
       system: ActorSystem, mat: Materializer): Future[HttpResponse] = {
-      Http().singleRequest(req).flatMap { resp =>
-         resp.status match {
-           case StatusCodes.Found => resp.header[headers.Location].map { loc =>
-             val locUri = loc.uri
-             val newUri = req.uri.copy(scheme = locUri.scheme, authority = locUri.authority)
-             val newReq = req.copy(uri = newUri)
-             if (maxRedirect > 0) httpRequire(newReq, maxRedirect - 1) else Http().singleRequest(newReq)
-           }.getOrElse(Future.failed(HTTPException(req.uri,s"location not found on 302 for ${req.uri}")))
-           case _ => Future(resp)
+      try {
+         Http().singleRequest(req)
+               .recoverWith{case e=>Future.failed(ConnectionException(req.uri.toString,e))}
+               .flatMap { resp =>
+            resp.status match {
+              case StatusCodes.Found => resp.header[headers.Location].map { loc =>
+                val locUri = loc.uri
+                val newUri = req.uri.copy(scheme = locUri.scheme, authority = locUri.authority)
+                val newReq = req.copy(uri = newUri)
+                if (maxRedirect > 0) httpRequire(newReq, maxRedirect - 1) else Http().singleRequest(newReq)
+              }.getOrElse(Future.failed(HTTPException(req.uri.toString,s"location not found on 302 for ${req.uri}")))
+              case _ => Future(resp).recoverWith{case e=>Future.failed(ConnectionException(req.uri.toString,e))}
+            }
          }
+      } catch {
+         case NonFatal(e) => Future.failed(ConnectionException(req.uri.toString,e))
       }
    }
    
@@ -169,15 +190,16 @@ class Web(implicit ec: ExecutionContext) {
 
    def GETrdf(uri: AkkaUri): Future[HttpRes[Rdf#Graph]] = {
        import akka.http.scaladsl.unmarshalling.Unmarshal
-       import scala.util.control.NonFatal
        
        GET(uri).flatMap{
          case HttpResponse(status,headers,entity,protocol) => {
-            implicit  val reqUnmarhaller = RdfMediaTypes.rdfUnmarshaller(uri)
             try {
-               Unmarshal(entity).to[Rdf#Graph].map(g=>HttpRes[Rdf#Graph](uri,status,headers,g))
+               implicit  val reqUnmarhaller = RdfMediaTypes.rdfUnmarshaller(uri)
+               Unmarshal(entity).to[Rdf#Graph]
+                 .recoverWith{case e=>Future.failed(ParseException(uri.toString,status,headers,e))}
+                 .map(g=>HttpRes[Rdf#Graph](uri,status,headers,g))
             } catch {
-              case NonFatal(e) => Future.failed(HTTPException(uri,s"cought error unmarshaling: "+e))
+              case NonFatal(e) => Future.failed(ParseException(uri.toString,status,headers,e))
             }
          }
        }
