@@ -38,7 +38,7 @@ val shortScriptConf = ConfigFactory.parseString("""
    |akka {
    |   loggers = ["akka.event.Logging$DefaultLogger"]
    |   logging-filter = "akka.event.DefaultLoggingFilter"
-   |   loglevel = "WARN"
+   |   loglevel = "ERROR"
    |}
  """.stripMargin)
 implicit val system = ActorSystem("akka_ammonite_script",shortScriptConf)
@@ -77,7 +77,7 @@ object RdfMediaTypes {
               case `application/ntriples` => ntriplesReader
               case `application/ld+json` => jsonldReader
            }
-           reader.read(new java.io.StringReader(string),requestUri.toString)        
+           reader.read(new java.io.StringReader(string),requestUri.toString)
         }
         rdfunmarshaller.forContentTypes(`text/turtle`,`application/rdf+xml`,`application/ntriples`,`application/ld+json`) 
   }
@@ -88,7 +88,7 @@ object Web {
     trait WebException extends java.lang.RuntimeException with NoStackTrace with Product with Serializable
     case class HTTPException(resourceUri: String, msg: String) extends WebException
     case class ConnectionException(resourceUri: String, e: Throwable) extends WebException
-    case class NodeTranslationException(resourceUri: Rdf#Node, e: Throwable) extends WebException
+    case class NodeTranslationException(graphLoc: String, problemNode: Rdf#Node, e: Throwable) extends WebException
     case class ParseException(resourceUri: String, 
                               status: StatusCode, 
                               responseHeaders: Seq[HttpHeader],
@@ -120,10 +120,10 @@ object Web {
    implicit class HttResPG(val h: HttpRes[PointedGraph[Rdf]]) extends AnyVal {
     def jump(rel: Sesame#URI)(implicit web: Web): List[Future[HttpRes[PointedGraph[Rdf]]]] =
           (h.content/rel).toList.map{ pg =>
-              if (h.content.pointer.isURI) try {
+              if (pg.pointer.isURI) try {
                    web.pointedGET(AkkaUri(pg.pointer.toString))
                  } catch {
-                   case NonFatal(e) => Future.failed(NodeTranslationException(h.content.pointer,e))
+                   case NonFatal(e) => Future.failed(NodeTranslationException(h.origin.toString, pg.pointer,e))
                  }
               else Future.successful(h.copy(content=pg))
        }
@@ -180,7 +180,7 @@ class Web(implicit ec: ExecutionContext) {
                   resp.header[headers.Location].map { loc =>
                   val newReq = req.copy(uri = loc.uri)
                   if (maxRedirect > 0) httpRequire(newReq, maxRedirect - 1) else Http().singleRequest(newReq)
-                 }.getOrElse(Future.failed(HTTPException(req.uri.toString,s"location not found on 302 or 303 for ${req.uri}")))
+                 }.getOrElse(Future.failed(HTTPException(req.uri.toString,s"Location header not found on ${resp.status} for ${req.uri}")))
               }
               case _ => Future.successful(resp)
             }
@@ -193,31 +193,43 @@ class Web(implicit ec: ExecutionContext) {
   
 
    def GETrdf(uri: AkkaUri): Future[HttpRes[Rdf#Graph]] = {
-       import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
-       import akka.util.ByteString
+     import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
+     import akka.util.ByteString
 
-       def decode(bytes: ByteString, entity: ResponseEntity) = {
-          val charBuffer = Unmarshaller.bestUnmarshallingCharsetFor(entity).nioCharset.decode(bytes.asByteBuffer)
-          val array = new Array[Char](charBuffer.length())
-          charBuffer.get(array)
-          new java.lang.String(array)
-       }
+     def decode(bytes: ByteString, entity: ResponseEntity) = {
+        val charBuffer = Unmarshaller.bestUnmarshallingCharsetFor(entity).nioCharset.decode(bytes.asByteBuffer)
+        val array = new Array[Char](charBuffer.length())
+        charBuffer.get(array)
+        new java.lang.String(array).take(210) //could be something to be set by config
+     }
  
-       GET(uri).flatMap {
-          case HttpResponse(status,headers,entity,protocol) => { 
-              implicit  val reqUnmarhaller = RdfMediaTypes.rdfUnmarshaller(uri)
-              Unmarshal(entity).to[Try[Rdf#Graph]]
-                  .transformWith {
-                      case Success(tryParse) => Future.fromTry(tryParse.map(g=>HttpRes[Rdf#Graph](uri,status,headers,g)))
-                      case Failure(e) => {
-                          val bytesF = entity.dataBytes.take(1).runFold(ByteString.empty) { case (acc, b) => acc ++ b }
-                          bytesF.map(decode(_,entity)).transform{ tryParse =>
-                             Failure(ParseException(uri.toString,status,headers,entity.contentType,tryParse,e)) 
-                          }
-                      }
+     GET(uri).flatMap {
+        case HttpResponse(status,headers,entity,protocol) => { 
+            def bytesF: Future[String] =  
+              entity.dataBytes.take(1).runFold(ByteString.empty)({ case (acc, b) => acc ++ b }).transform{ tryByteString =>
+                tryByteString.map(decode(_,entity))
               }
-          }
+            
+            implicit  val reqUnmarhaller = RdfMediaTypes.rdfUnmarshaller(uri)
+            Unmarshal(entity).to[Try[Rdf#Graph]]
+                .transformWith {
+                    case Success(tryParse) => 
+                          tryParse match {
+                             case Success(g) => 
+                                Future.successful(HttpRes[Rdf#Graph](uri,status,headers,g))
+                             case Failure(e) =>  
+                                bytesF.transform{ tryParse =>
+                                  Failure(ParseException(uri.toString,status,headers,entity.contentType,tryParse,e))
+                                }
+                          }
+                    case Failure(e) => {
+                        bytesF.transform{ tryParse =>
+                           Failure(ParseException(uri.toString,status,headers,entity.contentType,tryParse,e)) 
+                        }
+                    }
+            }
         }
+      }
     }
 
     def pointedGET(uri: AkkaUri): Future[HttpRes[PointedGraph[Rdf]]] = 
@@ -229,3 +241,5 @@ class Web(implicit ec: ExecutionContext) {
 //make life easier in the shell by setting up the environment
 implicit val web = new Web()
 val foaf = FOAFPrefix[Rdf]
+import $exec.FutureWrapper
+
