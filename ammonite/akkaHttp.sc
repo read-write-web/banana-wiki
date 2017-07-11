@@ -38,7 +38,7 @@ val shortScriptConf = ConfigFactory.parseString("""
    |akka {
    |   loggers = ["akka.event.Logging$DefaultLogger"]
    |   logging-filter = "akka.event.DefaultLoggingFilter"
-   |   loglevel = "WARNING"
+   |   loglevel = "WARN"
    |}
  """.stripMargin)
 implicit val system = ActorSystem("akka_ammonite_script",shortScriptConf)
@@ -67,8 +67,9 @@ object RdfMediaTypes {
    val `application/ld+json` = applicationWithOpenCharset("ld+json","jsonld")
 
    
-   def rdfUnmarshaller(requestUri: AkkaUri): FromEntityUnmarshaller[Rdf#Graph] = {
+   def rdfUnmarshaller(requestUri: AkkaUri): FromEntityUnmarshaller[Try[Rdf#Graph]] = {
         import Unmarshaller._
+        //todo: use non blocking parsers
         val rdfunmarshaller = PredefinedFromEntityUnmarshallers.stringUnmarshaller mapWithInput { (entity, string) ⇒ 
            val reader = entity.contentType.mediaType match { //<- this needs to be tuned!
               case `text/turtle` => turtleReader
@@ -76,13 +77,9 @@ object RdfMediaTypes {
               case `application/ntriples` => ntriplesReader
               case `application/ld+json` => jsonldReader
            }
-           reader.read(new java.io.StringReader(string),requestUri.toString) match {
-            case Success(g) => g
-            case Failure(err) => if (string.isEmpty) throw Unmarshaller.NoContentException else throw err
-            //throwing errors seems to be the thing to do in Akka
-         } 
-       }
-      rdfunmarshaller.forContentTypes(`text/turtle`,`application/rdf+xml`,`application/ntriples`,`application/ld+json`) 
+           reader.read(new java.io.StringReader(string),requestUri.toString)        
+        }
+        rdfunmarshaller.forContentTypes(`text/turtle`,`application/rdf+xml`,`application/ntriples`,`application/ld+json`) 
   }
 
 }
@@ -92,7 +89,12 @@ object Web {
     case class HTTPException(resourceUri: String, msg: String) extends WebException
     case class ConnectionException(resourceUri: String, e: Throwable) extends WebException
     case class NodeTranslationException(resourceUri: Rdf#Node, e: Throwable) extends WebException
-    case class ParseException(resourceUri: String, status: StatusCode, responseHeaders: Seq[HttpHeader],e: Throwable) extends WebException
+    case class ParseException(resourceUri: String, 
+                              status: StatusCode, 
+                              responseHeaders: Seq[HttpHeader],
+                              contentType: ContentType,
+                              initialContent: Try[String],
+                              e: Throwable) extends WebException
 
    implicit class UriW(val uri: AkkaUri)  extends AnyVal {
          def fragmentLess: AkkaUri = 
@@ -168,17 +170,19 @@ class Web(implicit ec: ExecutionContext) {
    def httpRequire(req: HttpRequest, maxRedirect: Int = 4)(implicit 
       system: ActorSystem, mat: Materializer): Future[HttpResponse] = {
       try {
+         import StatusCodes._
          Http().singleRequest(req)
                .recoverWith{case e=>Future.failed(ConnectionException(req.uri.toString,e))}
                .flatMap { resp =>
             resp.status match {
-              case StatusCodes.Found => resp.header[headers.Location].map { loc =>
-                val locUri = loc.uri
-                val newUri = req.uri.copy(scheme = locUri.scheme, authority = locUri.authority)
-                val newReq = req.copy(uri = newUri)
-                if (maxRedirect > 0) httpRequire(newReq, maxRedirect - 1) else Http().singleRequest(newReq)
-              }.getOrElse(Future.failed(HTTPException(req.uri.toString,s"location not found on 302 for ${req.uri}")))
-              case _ => Future(resp).recoverWith{case e=>Future.failed(ConnectionException(req.uri.toString,e))}
+              case Found | SeeOther | TemporaryRedirect | PermanentRedirect => {
+                  log.info(s"received a ${resp.status} for ${req.uri}")
+                  resp.header[headers.Location].map { loc =>
+                  val newReq = req.copy(uri = loc.uri)
+                  if (maxRedirect > 0) httpRequire(newReq, maxRedirect - 1) else Http().singleRequest(newReq)
+                 }.getOrElse(Future.failed(HTTPException(req.uri.toString,s"location not found on 302 or 303 for ${req.uri}")))
+              }
+              case _ => Future.successful(resp)
             }
          }
       } catch {
@@ -189,20 +193,31 @@ class Web(implicit ec: ExecutionContext) {
   
 
    def GETrdf(uri: AkkaUri): Future[HttpRes[Rdf#Graph]] = {
-       import akka.http.scaladsl.unmarshalling.Unmarshal
-       
-       GET(uri).flatMap{
-         case HttpResponse(status,headers,entity,protocol) => {
-            try {
-               implicit  val reqUnmarhaller = RdfMediaTypes.rdfUnmarshaller(uri)
-               Unmarshal(entity).to[Rdf#Graph]
-                 .recoverWith{case e=>Future.failed(ParseException(uri.toString,status,headers,e))}
-                 .map(g=>HttpRes[Rdf#Graph](uri,status,headers,g))
-            } catch {
-              case NonFatal(e) => Future.failed(ParseException(uri.toString,status,headers,e))
-            }
-         }
+       import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
+       import akka.util.ByteString
+
+       def decode(bytes: ByteString, entity: ResponseEntity) = {
+          val charBuffer = Unmarshaller.bestUnmarshallingCharsetFor(entity).nioCharset.decode(bytes.asByteBuffer)
+          val array = new Array[Char](charBuffer.length())
+          charBuffer.get(array)
+          new java.lang.String(array)
        }
+ 
+       GET(uri).flatMap {
+          case HttpResponse(status,headers,entity,protocol) => { 
+              implicit  val reqUnmarhaller = RdfMediaTypes.rdfUnmarshaller(uri)
+              Unmarshal(entity).to[Try[Rdf#Graph]]
+                  .transformWith {
+                      case Success(tryParse) => Future.fromTry(tryParse.map(g=>HttpRes[Rdf#Graph](uri,status,headers,g)))
+                      case Failure(e) => {
+                          val bytesF = entity.dataBytes.take(1).runFold(ByteString.empty) { case (acc, b) => acc ++ b }
+                          bytesF.map(decode(_,entity)).transform{ tryParse =>
+                             Failure(ParseException(uri.toString,status,headers,entity.contentType,tryParse,e)) 
+                          }
+                      }
+              }
+          }
+        }
     }
 
     def pointedGET(uri: AkkaUri): Future[HttpRes[PointedGraph[Rdf]]] = 
