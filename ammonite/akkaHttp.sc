@@ -96,6 +96,9 @@ object Web {
                               initialContent: Try[String],
                               e: Throwable) extends WebException
 
+   val foaf = FOAFPrefix[Rdf]
+   val rdfs = RDFSPrefix[Rdf] 
+
    implicit class UriW(val uri: AkkaUri)  extends AnyVal {
          def fragmentLess: AkkaUri = 
             if (uri.fragment.isEmpty) uri else uri.copy(fragment=None)
@@ -132,30 +135,48 @@ object Web {
     import scala.collection.immutable 
     def uriSource(uris: AkkaUri*): Source[AkkaUri,NotUsed] =  
          Source(immutable.Seq(uris:_*).to[collection.immutable.Iterable])
-
+   
+   //simple transformation of a Future into an always successful one - useful to avoid failed futures leading to closure of streams
    def neverFail[X](fut: Future[X]): Future[Try[X]] = fut.transform(Success(_))
-   def reduceFlowFuture[X](n: Int=1) = Flow[Future[X]].mapAsyncUnordered(n){f: Future[X] =>
-              log.info("received a future. Will now reapper as object in Stream")
-              f
+  
+   //flatten a flow of Flow[Future[X]] to a Flow[X] 
+   def flattenFutureFlow[X](n: Int=1): Flow[Future[X],X,_] = Flow[Future[X]].mapAsyncUnordered(n)(identity)
+   
+   /**
+    * return an Akka Source of Try[HttpRes[Rdf#PointedGraphs]] starting 
+    * from the me WebID, and including any relevant rdfs.seeAlso linked files.
+    * The source is useful for finding all the linked to friends, including broken
+    * links, with very simple explanations as to what went wrong accessing those 
+    * (hence the Try).
+    */
+   def foafKnowsSource(me: AkkaUri) = {
+      import scala.collection.immutable
+      val meRdfUri = URI(me.toString)
+      val mine = uriSource(me)
+      val sourceJumpId = mine.mapAsync(1){uri => web.pointedGET(uri)}
+      val sourceJumpSeeAlso = sourceJumpId.mapConcat{ (hrpg: HttpRes[PointedGraph[Rdf]]) =>
+         val seqFut:  immutable.Seq[Future[HttpRes[PointedGraph[Rdf]]]] = hrpg.jump(rdfs.seeAlso).to[immutable.Seq] 
+         //we want the see Also docs to be pointing to the same URI (should be a special function)
+         val meInSeeAlso = seqFut.map(fut => fut.map( _.map(pg=>PointedGraph[Rdf](meRdfUri,pg.graph) ))) //<-there are better ways to do that. 
+         (meInSeeAlso :+ Future.successful(hrpg)).map(neverFail(_))
+      } 
+      val sourceJumpFutKn = sourceJumpSeeAlso.via(flattenFutureFlow(50)).mapConcat{
+           case Success(hrpg) => hrpg.jump(foaf.knows).to[immutable.Iterable].map(neverFail(_)) 
+           case failure => immutable.Iterable(Future.successful(failure))
+      }
+      sourceJumpFutKn.via(flattenFutureFlow(50))
    }
 
-   def goodFriendGraph(me: AkkaUri) = {
-       import scala.collection.immutable
-       val mine = uriSource(me)
-       val sourceJumpId = mine.mapAsync(1){uri => log.info("initial jump id"); web.pointedGET(uri)}
-       val sourceJumpFutKn = sourceJumpId.mapConcat{ hrpg => 
-           val seqFut = hrpg.jump(foaf.knows).to[immutable.Iterable] 
-           log.info(s"jumped <${me.toString}>/foaf.knows and received a sequence of ${seqFut.size} Futures")
-           seqFut.map(neverFail(_))
-       }
-       val sourceJumpTryKn = sourceJumpFutKn.via(reduceFlowFuture(50))
-       val sinkFold2 = Sink.fold[List[Try[Web.HttpRes[PointedGraph[Rdf]]]],
-                                 Try[Web.HttpRes[PointedGraph[Rdf]]]](List()){ case (l,t)=>
-                                   log.info(s"in Sink.fold. Appending $t to $l")
-                                   t::l
-                                  }
-       sourceJumpTryKn.toMat(sinkFold2)(Keep.right)
+   def filterForSuccess[X] = Flow[Try[X]].filter(_.isSuccess ).map(_.get)
+ 
+   /*
+   def xxx() = {
+      
+      val sinkFold2 = Sink.fold[List[Try[Web.HttpRes[PointedGraph[Rdf]]]],
+                                Try[Web.HttpRes[PointedGraph[Rdf]]]](List()){ case (l,t)=> t::l }
+      sourceJumpTryKn.toMat(sinkFold2)(Keep.right)
    }
+   */
  
 }
 
@@ -240,6 +261,5 @@ class Web(implicit ec: ExecutionContext) {
 
 //make life easier in the shell by setting up the environment
 implicit val web = new Web()
-val foaf = FOAFPrefix[Rdf]
 import $exec.FutureWrapper
 
