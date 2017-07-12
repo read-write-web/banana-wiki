@@ -85,6 +85,8 @@ object RdfMediaTypes {
 }
 
 object Web {
+    type PGWeb = HttpRes[PointedGraph[Rdf]] 
+
     trait WebException extends java.lang.RuntimeException with NoStackTrace with Product with Serializable
     case class HTTPException(resourceUri: String, msg: String) extends WebException
     case class ConnectionException(resourceUri: String, e: Throwable) extends WebException
@@ -120,8 +122,8 @@ object Web {
    }
 
 
-   implicit class HttResPG(val h: HttpRes[PointedGraph[Rdf]]) extends AnyVal {
-    def jump(rel: Sesame#URI)(implicit web: Web): List[Future[HttpRes[PointedGraph[Rdf]]]] =
+   implicit class HttResPG(val h: PGWeb) extends AnyVal {
+    def jump(rel: Sesame#URI)(implicit web: Web): List[Future[PGWeb]] =
           (h.content/rel).toList.map{ pg =>
               if (pg.pointer.isURI) try {
                    web.pointedGET(AkkaUri(pg.pointer.toString))
@@ -149,31 +151,40 @@ object Web {
     * links, with very simple explanations as to what went wrong accessing those 
     * (hence the Try).
     */
-   def foafKnowsSource(me: AkkaUri) = {
-      import scala.collection.immutable
-      val meRdfUri = URI(me.toString)
-      val mine = uriSource(me)
-      val sourceJumpId = mine.mapAsync(1){uri => web.pointedGET(uri)}
-      val sourceJumpSeeAlso = sourceJumpId.mapConcat{ (hrpg: HttpRes[PointedGraph[Rdf]]) =>
-         val seqFut:  immutable.Seq[Future[HttpRes[PointedGraph[Rdf]]]] = hrpg.jump(rdfs.seeAlso).to[immutable.Seq] 
-         //we want the see Also docs to be pointing to the same URI (should be a special function)
-         val meInSeeAlso = seqFut.map(fut => fut.map( _.map(pg=>PointedGraph[Rdf](meRdfUri,pg.graph) ))) //<-there are better ways to do that. 
-         (meInSeeAlso :+ Future.successful(hrpg)).map(neverFail(_))
-      } 
-      val sourceJumpFutKn = sourceJumpSeeAlso.via(flattenFutureFlow(50)).mapConcat{
-           case Success(hrpg) => hrpg.jump(foaf.knows).to[immutable.Iterable].map(neverFail(_)) 
-           case failure => immutable.Iterable(Future.successful(failure))
-      }
-      sourceJumpFutKn.via(flattenFutureFlow(50))
-   }
+   def foafKnowsSource(me: AkkaUri): Source[Try[PGWeb],_] = 
+      uriSource(me).mapAsync(1){uri => web.pointedGET(uri)}
+                   .via(addSeeAlso) 
+                   .mapConcat{ //jump to remote foaf.knows
+                      case Success(hrpg) => hrpg.jump(foaf.knows).to[immutable.Iterable].map(neverFail(_)) 
+                      case failure => immutable.Iterable(Future.successful(failure))
+                   }.via(flattenFutureFlow(50))
+   
+  
+   //add any rdfs:seeAlso going out from a node to the stream, placing the pointer on the same point in the other graph
+   def addSeeAlso: Flow[PGWeb,Try[PGWeb],_] = Flow[PGWeb].mapConcat{ hrpg =>
+       val seqFut:  immutable.Seq[Future[PGWeb]] = hrpg.jump(rdfs.seeAlso).to[immutable.Seq]
+        //we want the see Also docs to be pointing to the same URI as the original pgweb
+       val seeAlso = seqFut.map(fut => fut.map( _.map(pg=>PointedGraph[Rdf](hrpg.content.pointer,pg.graph) ))) 
+         (seeAlso :+ Future.successful(hrpg)).map(neverFail(_))
+   }.via(flattenFutureFlow(50))  // 50 is a bit arbitrary
 
-   def filterForSuccess[X] = Flow[Try[X]].filter(_.isSuccess ).map(_.get)
+   def filterForSuccess[X] = Flow[Try[X]].collect{ case Success(x) => x }
+
+   def filterLinkedTo(rel: Rdf#URI, obj: Rdf#URI): Flow[PGWeb,PGWeb,_] = 
+     Flow[PGWeb].filter(htres => (htres.content/rel).exists(_.pointer == obj))
+  
+   def consciensciousFriends(me: AkkaUri): Source[PGWeb,_] = 
+      foafKnowsSource(me).via(filterForSuccess)
+             .via(addSeeAlso)
+             .via(filterForSuccess)
+             .via(filterLinkedTo(foaf.knows,URI(me.toString)))
+    
  
    /*
    def xxx() = {
       
-      val sinkFold2 = Sink.fold[List[Try[Web.HttpRes[PointedGraph[Rdf]]]],
-                                Try[Web.HttpRes[PointedGraph[Rdf]]]](List()){ case (l,t)=> t::l }
+      val sinkFold2 = Sink.fold[List[Try[Web.PGWeb]],
+                                Try[Web.PGWeb]](List()){ case (l,t)=> t::l }
       sourceJumpTryKn.toMat(sinkFold2)(Keep.right)
    }
    */
