@@ -34,6 +34,8 @@
      </ol>
      <li><a href="jumping-around-in-streams">Jumping around in Streams</a>
      <ol>
+     </ol>
+</details>
 <details>
 <summary><a href="#appendix">Appendix</a></summary> 
  <ol>
