@@ -105,7 +105,7 @@ object Web {
          def fragmentLess: AkkaUri = 
             if (uri.fragment.isEmpty) uri else uri.copy(fragment=None)
          
-         def toRdfUri: Rdf#URI = URI(uri.toString)
+         def toRdf: Rdf#URI = URI(uri.toString)
     }
 
    def rdfRequest(uri: AkkaUri): HttpRequest = {
@@ -177,7 +177,7 @@ object Web {
       foafKnowsSource(me).via(filterForSuccess)
              .via(addSeeAlso)
              .via(filterForSuccess)
-             .via(filterLinkedTo(foaf.knows,URI(me.toString)))
+             .via(filterLinkedTo(foaf.knows,me.toRdf))
     
  
    /*
@@ -265,7 +265,7 @@ class Web(implicit ec: ExecutionContext) {
     }
 
     def pointedGET(uri: AkkaUri): Future[HttpRes[PointedGraph[Rdf]]] = 
-         GETrdf(uri).map(httpresg=>httpresg.map(g=>PointedGraph[Rdf](URI(uri.toString),g)))
+         GETrdf(uri).map(_.map(PointedGraph[Rdf](uri.toRdf,_)))
     
 
 }

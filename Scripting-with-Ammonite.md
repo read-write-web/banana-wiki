@@ -7,7 +7,7 @@
 	</ol>
 </details>
 <details>
-<summary><a href="#the-web-of-data">The Web of Data</summary>
+<summary><a href="#the-web-of-data-1-threads-and-futures">The Web of Data 1 - Threads and Futures</summary>
    <ol>       
 	<li><a href="#fetching-a-graph">Fetching a Graph</a>
 	<li><a href="#following-links">Following Links</a>
@@ -21,8 +21,20 @@
 		</ol> 
 	<li> <a href="#the-script">The Script</a>
     </ol>
-	</details>
-	<details>
+</details>
+<details>
+   <summary><a href="#the-web-of-data-2-actors-and-streams">The Web of Data 2 - Actors and Streams</summary>
+   <ol>
+     <li><a href="">Fetching resources with Akka Http</a>
+     <ol> 
+        <li><a href="#imports">Imports</a>
+        <li><a href="#strongly-typed-mime-types">Strongly Typed Mime Types</a>  
+        <li><a href="#geting-a-resource-from-the-web">GETing a resource from the web</a>
+        <li><a href="#working-with-graphs-and-pointed-graphs">Working with graphs and pointed graphs</a>
+     </ol>
+     <li><a href="jumping-around-in-streams">Jumping around in Streams</a>
+     <ol>
+<details>
 <summary><a href="#appendix">Appendix</a></summary> 
  <ol>
   <li><a href="#references">References</a>
@@ -226,7 +238,7 @@ Again this is very similar to OO programming when you follow an attribute to get
 You can explore more examples by looking at the test suite, starting from [the diesel example](https://github.com/banana-rdf/banana-rdf/blob/series/0.8.x/rdf-test-suite/shared/src/main/scala/org/w3/banana/diesel/DieselGraphConstructTest.scala).
 
 
-# The Web of Data
+# The Web of Data 1: Threads and Futures
 
 
 # Fetching a graph
@@ -745,7 +757,7 @@ cache.getPointed(webId) | (_.jump(foaf.knows)) || sequenceNoFail | (_ |?| {
 
 So here we can think of `cache.getPointed(webId)` as returning a Future `PointedGraphWeb`. This `PointedWebGraph` web is streamed using `|`  (in the future) to the jump function, which outputs a `Seq[Future[PointedGraphWeb]]`. This is the passed (in the future) via '||' (ie. `flatMap`) to the `sequenceNoFail` method, which transforms that output into a new Future of Sequences which replaces the previous ones, placing us now at the outer edge of the future, as all the previous futures have to be finished before the results of that outer future can be collected with `|?|`. 
 
-We may want to improve this by following `rdfs:seeAlso` links or links to `foaf:Groups` as those may be where the return links have been placed.
+We may want to improve this by following `rdfs:seeAlso` links or links to `foaf:Groups` as those may be where the return links have been placed. Actually, I urge the reader to try that and find out how difficult this Future based monadic programing starts becomeing.
 
 ### Limitations 
 
@@ -771,6 +783,257 @@ IT may be that those make more sense in a different project, as they go too far 
 In order to be able to test new ideas more quickly without having to copy and paste from this wiki page all the time, the code has been placed in a script on this page at [`ammonite/Jump.sc`](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/ammonite/Jump.sc).
 
 You can just download it locally to execute it, or even clone the git wiki repository as mentioned on the [root of this wiki](../wiki).
+
+# The Web of Data 2 - Actors and Streams
+
+So in the previous section we covered all the basics of what we can understand to be an extension of the
+hypertext based web into hyper data. But we saw that if we use the traditional thread based programming
+method, that has the advantage of at least locally making it look to a user that he is programming sequentially,
+the cost mounts very quickly as each thread takes up half a MB of memory just by itself. The Future based
+programming that wraps that has the advantage of hiding the complexity of synchronisation, but requires
+one to work as if there was no time - one has to wait for the whole computation to finish before retrieving
+an answer. If we try to use callbacks on futures to get answers as they arrive then we need to process
+these results as a stream. Stream based computation is [co-algebraic](https://link.springer.com/chapter/10.1007/978-3-642-32784-1_6),
+and this brings a whole new dimension to programming which is required if we want to be able to efficiently
+explore the web of data. 
+
+## Actors and Streams with Akka
+
+[Akka](http://akka.io/) is a Scala Actor library that makes it possible to increase by potentially a factor
+of a million the effectiveness of threads, especially when working with IO over the internet, as the speed
+at which information comes back over the internet can be a factor of 
+[a billion times slower](https://people.eecs.berkeley.edu/~rcs/research/interactive_latency.html) than the fastest
+calculation on the cpu.  
+
+Actors are named entities that have an inbox of messages that they can look into and process and
+when done potentially send a message to another actor. A scheduler can by taking into account inbox size
+or other features prioritizes which actor will run next - and potentially on which
+thread they should run on.  This maps very nicely to TCP/IP and internet communication which is message based. 
+
+Actors are 1000 times less hungry in memory than threads are. Where 2000 threads would take a GigaByte of 
+heap space, one can get close to 2.5 million actors in that same space. But they are also much more effective
+at using the cpu, because actors usually always have something to do when they are called, whereas that is
+may not at all be the case for threads waiting on IO.  
+
+Because Actors are such a good model for IO, [Akka](http://akka.io/) comes with a Streams library built
+on those actors and an HTTP library built on that Stream model (for more detail see the 
+[docs](http://akka.io/docs/))
+
+But there are a few other nice things that come out of the box with Akka. The Akka Http client
+library makes sure that requests to web servers are limited so as not to overload a host and
+risk being banned from the hosts operator.
+
+
+### Imports
+
+In this section we will show how to build some simple hyper data based applications based on
+streams and banana-rdf in order to overcome the previous limitations we discovered with threads
+and Futures. We will do this by going over the Ammonite Script 
+[akkaHttp.sc](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/ammonite/akkaHttp.sc) 
+that has been placed in this wiki.
+
+Importing Akka HTTP and its dependency is a simple as 
+pasting this one line into the ammonite shell.
+
+```scala
+import $ivy.`com.typesafe.akka::akka-http:10.0.9`
+```
+
+The main libraries we need are then important for use 
+in the shell/script with
+
+```scala
+import akka.actor.ActorSystem
+import akka.actor.SupervisorStrategy
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.{Uri=>AkkaUri,_}
+
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings,Supervision,_}
+import akka.stream.scaladsl._
+import akka.{ NotUsed, Done }
+import akka.event.Logging
+```
+
+We then just need to start the Actor environement with
+
+```scala
+val shortScriptConf = ConfigFactory.parseString("""
+   |akka {
+   |   loggers = ["akka.event.Logging$DefaultLogger"]
+   |   logging-filter = "akka.event.DefaultLoggingFilter"
+   |   loglevel = "ERROR"
+   |}
+ """.stripMargin)
+implicit val system = ActorSystem("akka_ammonite_script",shortScriptConf)
+val log = Logging(system.eventStream, "banana-rdf")
+implicit val materializer = ActorMaterializer(
+                ActorMaterializerSettings(system).withSupervisionStrategy(Supervision.resumingDecider))
+implicit val ec: ExecutionContext = system.dispatcher
+```
+
+This time we will not mention the `Sesame` implementation of banana-rdf
+explicity when using each types, as we did in the previous section 
+instead  we will just use the `Rdf` value imported by Sesame which 
+identifies that with Sesame. If we switch to the well known Java Jena 
+library, or our banana's own `Plantain` library, none of the code
+ will need to change.
+
+Well excpet the few imports where those names appear
+
+```scala
+import $ivy.`org.w3::banana-sesame:0.8.4-SNAPSHOT`
+import org.w3.banana._
+import org.w3.banana.syntax._
+import org.w3.banana.sesame.Sesame
+import Sesame._
+import Sesame.ops._
+```
+
+_Todo: give the above imports for Jena and Plantain_
+
+### Strongly Typed Mime Types 
+
+Akka's whole HTTP layer is strongly typed, allowing errors in constructing
+HTTP headers or in parsing them to be caught at compilation time. And indeed
+even mime types are strongly typed objects. Akka does not come with the RDF
+mime types, so we just build them ourselves in the `RdfMediaTypes` object.
+
+```scala
+   val `text/turtle` = text("turtle","ttl")
+   val `application/rdf+xml` = applicationWithOpenCharset("rdf+xml","rdf")
+   val `application/ntriples` = applicationWithFixedCharset("ntriples",`UTF-8`,"nt")
+   val `application/ld+json` = applicationWithOpenCharset("ld+json","jsonld")
+```
+
+We can then create our Unmarshallers for the 4 most used rdf mime types, which
+will be used to transform the stream of an HTTP connection to an `Rdf#Graph`.
+
+```scala
+   def rdfUnmarshaller(requestUri: AkkaUri): FromEntityUnmarshaller[Try[Rdf#Graph]] = {
+        import Unmarshaller._
+        //todo: use non blocking parsers
+        val rdfunmarshaller = PredefinedFromEntityUnmarshallers.stringUnmarshaller mapWithInput { (entity, string) ⇒
+           val reader = entity.contentType.mediaType match { //<- this needs to be tuned!
+              case `text/turtle` => turtleReader
+              case `application/rdf+xml` => rdfXMLReader
+              case `application/ntriples` => ntriplesReader
+              case `application/ld+json` => jsonldReader
+           }
+           reader.read(new java.io.StringReader(string),requestUri.toString)
+        }
+        rdfunmarshaller.forContentTypes(`text/turtle`,`application/rdf+xml`,`application/ntriples`,`application/ld+json`)
+  }
+```
+
+Notice that because banana-rdf does not have a non-blocking parser API, we need to
+read the whole string into memory and then parse it. Non blocking streaming parsers
+could be very useful in many scenarios such as when the aim is just to save the data
+to a database, or in the case where the need is just to pass it along. See 
+[issue 211](https://github.com/banana-rdf/banana-rdf/issues/211) on that topic. But
+even here it is clear that it could save having to store the original stream in
+memory, and just construct the graph.
+
+_Todo: Add an RDFa html parser._
+_Todo: show how the mime types are strongly typed_
+
+### GETing a resource from the web
+
+To get started we can use Akka's `Future` based method for fetching a
+resource on the web `Http().singleRequest(req)`. We can incorporate
+a future into a stream so this won't be a problem. Later when our demos
+work for code we understand we can write a Stream based request service.
+
+First we have a method to build an RDF focused `HttpRequest` object
+for fetching a particular Uri.  
+
+```scala
+  def rdfRequest(uri: AkkaUri): HttpRequest = {
+      import RdfMediaTypes._
+      import akka.http.scaladsl.model.headers.Accept
+      HttpRequest(uri=uri.fragmentLess)
+           .addHeader(Accept(`text/turtle`,`application/rdf+xml`,
+                             `application/ntriples`,`application/ld+json`))
+   }
+```
+
+Here we could set preferences for each mime type depending on what the 
+estimated quality of our parsers are. It would clearly help to add an
+[RDFa](https://rdfa.info/) parsers there too, though this would require
+a request on html mime type, which is most often less likely to contain
+any RDF at all, and so should have slightly less priority than the pure
+RDF mime types.
+
+Next we can use that to build a simple RDF GET request:
+
+```scala
+  def GET(uri: AkkaUri, maxRedirect: Int=4): Future[HttpResponse] = httpRequire(rdfRequest(uri),maxRedirect)
+```
+
+since `Akka`s Http layer does not deal directly with redirects we can
+repurpose a piece of code found on the akka github repository to provide this.
+This is useful, as this part is often wrongly implemented.
+
+_Todo: Check that this implementation is correct as far as redirects go_
+
+```Scala
+   //see: https://github.com/akka/akka-http/issues/195
+   def httpRequire(req: HttpRequest, maxRedirect: Int = 4)(implicit
+      system: ActorSystem, mat: Materializer): Future[HttpResponse] = {
+      try { //<- is this try still needed? if it is report to issue 1276
+         import StatusCodes._
+         Http().singleRequest(req)
+               .recoverWith{case e=>Future.failed(ConnectionException(req.uri.toString,e))}
+               .flatMap { resp =>
+            resp.status match {
+              case Found | SeeOther | TemporaryRedirect | PermanentRedirect => {
+                  log.info(s"received a ${resp.status} for ${req.uri}")
+                  resp.header[headers.Location].map { loc =>
+                  val newReq = req.copy(uri = loc.uri)
+                  if (maxRedirect > 0) httpRequire(newReq, maxRedirect - 1) else Http().singleRequest(newReq)
+                 }.getOrElse(Future.failed(HTTPException(req.uri.toString,s"Location header not found on ${resp.status} for ${req.uri}")))
+              }
+              case _ => Future.successful(resp)
+            }
+         }
+      } catch {
+         case NonFatal(e) => Future.failed(ConnectionException(req.uri.toString,e))
+      }
+   }
+```
+
+(Care must be taken to catch exceptions. Sadly Scala does not provide compiler support for
+finding those [see issue 1276](https://github.com/akka/akka-http/issues/1276).)
+
+### Working with Graphs and PointedGraphs 
+
+Next we need to parse the content returned into an RDF Graph when possible. This
+is done by the `GETrdf` function.
+
+```
+def GETrdf(uri: AkkaUri): Future[HttpRes[Rdf#Graph]]
+```
+
+This returns a `HttpRes` object which allows one to keep as much information about the headers
+which we may need later for a Cache object for example (e.g to determine  if it 
+need to fetch a newer version of the resource) and it is generic on the type.
+
+```
+ case class HttpRes[C](origin: AkkaUri, status: StatusCode, headers: Seq[HttpHeader], content: C) {
+      def map[D](f: C => D) = this.copy(content=f(content))
+   }
+```
+
+This allows us then allows us to define a function to the graph to a pointed graph
+in one line.
+
+```
+  def pointedGET(uri: AkkaUri): Future[HttpRes[PointedGraph[Rdf]]] =
+         GETrdf(uri).map(_.map(PointedGraph[Rdf](uri.toRdf,_)))
+```
+
+
+
+## Jumping Around in Streams
 
 # Appendix
 
