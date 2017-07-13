@@ -6,6 +6,59 @@
     <li><a href="#constructing-and-querying-rdf-graphs">Constructing and Querying RDF Graphs</a>
 	</ol>
 </details>
+
+<details> 
+   <summary><a href="#the-ammonite-shell">The Ammonite Shell</a></summary>
+    <ol>
+    <li> <a href="#why-ammonite"># Why Ammonite?</a>
+<li> <a href="#ammonite-and-banana-rdf"># Ammonite and Banana-RDF</a>
+<li> <a href="#constructing-and-querying-rdf-graphs"># Constructing and querying RDF Graphs</a>
+    </ol>
+    </details>
+<li> <a href="#the-web-of-data-1-threads-and-futures">The Web of Data 1: Threads and Futures</a>
+<details>
+    <summary><a href="#fetching-a-graph">Fetching a graph</a></summary>
+    <ol>
+    <details>
+    <summary><a href="#following-links"># Following links</a></summary>
+    <ol>
+    <li> <a href="#purpose-and-method">## Purpose and method</a>
+<li> <a href="#fetching-and-parsing-docs">## Fetching and parsing docs</a>
+<li> <a href="#exploring-a-remotely-loaded-graph">## Exploring a remotely loaded graph</a>
+<li> <a href="#efficiency-improvements-asynchrony-and-caching">## Efficiency improvements: Asynchrony and Caching</a>
+<li> <a href="#finding-the-conscientious-friends">## Finding the Conscientious Friends</a>
+<li> <a href="#limitations">## Limitations</a>
+    </ol>
+    </details>
+<li> <a href="#the-script"># The Script</a>
+    </ol>
+    </details>
+<details>
+    <summary><a href="#the-web-of-data-2---actors-and-streams">The Web of Data 2 - Actors and Streams</a></summary>
+    <ol>
+    <details>
+    <summary><a href="#actors-and-streams-with-akka"># Actors and Streams with Akka</a></summary>
+    <ol>
+    <li> <a href="#imports">## Imports</a>
+<li> <a href="#strongly-typed-mime-types">## Strongly Typed Mime Types</a>
+<li> <a href="#geting-a-resource-from-the-web">## GETing a resource from the web</a>
+<li> <a href="#working-with-graphs-and-pointedgraphs">## Working with Graphs and PointedGraphs</a>
+    </ol>
+    </details>
+<li> <a href="#jumping-around-in-streams"># Jumping Around in Streams</a>
+    </ol>
+    </details>
+<details>
+    <summary><a href="#appendix">Appendix</a></summary>
+    <ol>
+    <li> <a href="#references"># References</a>
+<li> <a href="#todo"># Todo</a>
+    </ol>
+    </details>
+    </ol>
+    </details>
+
+
 <details>
 <summary><a href="#the-web-of-data-1-threads-and-futures">The Web of Data 1 - Threads and Futures</summary>
    <ol>       
@@ -556,7 +609,7 @@ a graph just by following links inside the graph.
 
 As we will want to fetch a number of graphs by following the `foaf:knows` links, we would like to do this in parallel. 
 
-At this point, the [`java.net.HttpURLConnection`](https://docs.oracle.com/javase/8/docs/api/java/net/HttpURLConnection.html) starts showing its age and limitations as it is a blocking call that holds onto a thread. And threads are expensive: over half a MB each. This may not sound like a lot but if you want to open 1000 threads simultaneously you would end up using up half a Gigabyte just in thead overhead, and your system would become very slow as the Virtual Machine will keep jumping through 1000 threads just waiting to see if any one of them has something to parse, where most of the time they won't - as internet connections are close to 1 billion times slower than fetching information from an internal CPU cache.
+At this point, the [`java.net.HttpURLConnection`](https://docs.oracle.com/javase/8/docs/api/java/net/HttpURLConnection.html) starts showing its age and limitations as it is a blocking call that holds onto a thread. And threads are expensive: over half a MB each. This may not sound like a lot but if you want to open 1000 threads simultaneously you would end up using up half a Gigabyte just in thread overhead, and your system would become very slow as the Virtual Machine will keep jumping through 1000 threads just waiting to see if any one of them has something to parse, where most of the time they won't - as internet connections are close to 1 billion times slower than fetching information from an internal CPU cache.
 
 But in order to avoid bringing in too many other concepts at this point let us deal with this the simple way, using threads and Futures. This will be good enough for a demo application and will provide a stepping stone to the more advanced tools. It will also make sure that you will notice if you start hammering the internet, as your computer will slow down quite quickly.
 
@@ -719,6 +772,7 @@ Conscientious friends are friends who link back to one. This has not
 been easy until now as there have been no good UIs to automate this or to remind one to update ones profile. The aim of this document is to make it easy for people to automate all these processes, including the notification of broken links to help maintain the linked data web in good form.
 
 So to do this we need to
+
  1. jump on the foaf.knows relation for the WebID we are interested in
  2. for each of the remotely jumped to graphs select those nodes that have a `foaf.knows` relation back to the initial WebId. 
 
@@ -814,16 +868,20 @@ thread they should run on.  This maps very nicely to TCP/IP and internet communi
 
 Actors are 1000 times less hungry in memory than threads are. Where 2000 threads would take a GigaByte of 
 heap space, one can get close to 2.5 million actors in that same space. But they are also much more effective
-at using the cpu, because actors usually always have something to do when they are called, whereas that is
+at using the cpu, because actors usually always have something to do when they are called, whereas that
 may not at all be the case for threads waiting on IO.  
 
 Because Actors are such a good model for IO, [Akka](http://akka.io/) comes with a Streams library built
 on those actors and an HTTP library built on that Stream model (for more detail see the 
 [docs](http://akka.io/docs/))
 
-But there are a few other nice things that come out of the box with Akka. The Akka Http client
+But there are many other nice features that come out of the box with Akka, and that are worth mentioning:
+
+* The Akka Http client
 library makes sure that requests to web servers are limited so as not to overload a host and
 risk being banned from the hosts operator. See the explanation for [Pool overflow and the max-open-requests setting](http://doc.akka.io/docs/akka-http/current/scala/http/client-side/pool-overflow.html#pool-overflow-and-the-max-open-requests-setting). It is worth looking at the [akka-http-core Reference Config File](https://github.com/akka/akka-http/blob/master/akka-http-core/src/main/resources/reference.conf#L223) to see what other parameters can be tuned.
+* Akka Http headers are strongly typed, making it possible for the compiler to detect mistakenly formed headers
+* It comes with a serialisation/deserialisation library, making it possible to plug various serialisers together functionally.
 
 
 ### Imports
@@ -832,7 +890,7 @@ In this section we will show how to build some simple hyper data based applicati
 streams and banana-rdf in order to overcome the previous limitations we discovered with threads
 and Futures. We will do this by going over important parts of the Ammonite Script 
 [akkaHttp.sc](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/ammonite/akkaHttp.sc) 
-that has been placed in this wiki.
+that has been placed in this wiki. But unlike the previous section we won't go over every step in full detail.
 
 Importing Akka HTTP and its dependency is a simple as 
 pasting this one line into the ammonite shell.
@@ -884,8 +942,6 @@ few imports where those names appear:
 
 ```scala
 import $ivy.`org.w3::banana-sesame:0.8.4-SNAPSHOT`
-import org.w3.banana._
-import org.w3.banana.syntax._
 import org.w3.banana.sesame.Sesame
 import Sesame._
 import Sesame.ops._
