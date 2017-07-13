@@ -1,101 +1,4 @@
-<details>
-<summary><a href="#the-ammonite-shell">The Ammonite Shell</a></summary>
-	<ol>
-	<li> <a href="#why-ammonite">Why Ammonite?</a>
-	<li> <a href="#ammonite-and-banana-rdf">Ammonite and Banana-RDF</a>
-    <li><a href="#constructing-and-querying-rdf-graphs">Constructing and Querying RDF Graphs</a>
-	</ol>
-</details>
-
-<details> 
-   <summary><a href="#the-ammonite-shell">The Ammonite Shell</a></summary>
-    <ol>
-    <li> <a href="#why-ammonite"># Why Ammonite?</a>
-<li> <a href="#ammonite-and-banana-rdf"># Ammonite and Banana-RDF</a>
-<li> <a href="#constructing-and-querying-rdf-graphs"># Constructing and querying RDF Graphs</a>
-    </ol>
-    </details>
-<li> <a href="#the-web-of-data-1-threads-and-futures">The Web of Data 1: Threads and Futures</a>
-<details>
-    <summary><a href="#fetching-a-graph">Fetching a graph</a></summary>
-    <ol>
-    <details>
-    <summary><a href="#following-links"># Following links</a></summary>
-    <ol>
-    <li> <a href="#purpose-and-method">## Purpose and method</a>
-<li> <a href="#fetching-and-parsing-docs">## Fetching and parsing docs</a>
-<li> <a href="#exploring-a-remotely-loaded-graph">## Exploring a remotely loaded graph</a>
-<li> <a href="#efficiency-improvements-asynchrony-and-caching">## Efficiency improvements: Asynchrony and Caching</a>
-<li> <a href="#finding-the-conscientious-friends">## Finding the Conscientious Friends</a>
-<li> <a href="#limitations">## Limitations</a>
-    </ol>
-    </details>
-<li> <a href="#the-script"># The Script</a>
-    </ol>
-    </details>
-<details>
-    <summary><a href="#the-web-of-data-2---actors-and-streams">The Web of Data 2 - Actors and Streams</a></summary>
-    <ol>
-    <details>
-    <summary><a href="#actors-and-streams-with-akka"># Actors and Streams with Akka</a></summary>
-    <ol>
-    <li> <a href="#imports">## Imports</a>
-<li> <a href="#strongly-typed-mime-types">## Strongly Typed Mime Types</a>
-<li> <a href="#geting-a-resource-from-the-web">## GETing a resource from the web</a>
-<li> <a href="#working-with-graphs-and-pointedgraphs">## Working with Graphs and PointedGraphs</a>
-    </ol>
-    </details>
-<li> <a href="#jumping-around-in-streams"># Jumping Around in Streams</a>
-    </ol>
-    </details>
-<details>
-    <summary><a href="#appendix">Appendix</a></summary>
-    <ol>
-    <li> <a href="#references"># References</a>
-<li> <a href="#todo"># Todo</a>
-    </ol>
-    </details>
-    </ol>
-    </details>
-
-
-<details>
-<summary><a href="#the-web-of-data-1-threads-and-futures">The Web of Data 1 - Threads and Futures</summary>
-   <ol>       
-	<li><a href="#fetching-a-graph">Fetching a Graph</a>
-	<li><a href="#following-links">Following Links</a>
-		<ol>
-		 <li><a href="#purpose-and-method">Purpose and method</a>	
-		<li><a href="#fetching-and-parsing-docs">Fetching and Parsing docs</a>
-		<li><a href="#exploring-a-remotely-loaded-graph">Exploring a remotely loaded graph</a>
-		<li><a href="#efficiency-improvements-asynchrony-and-caching">Efficiency improvements: Asynchrony and Caching</a>
-		<li><a href="#finding-the-conscientious-friends">Finding the Conscientious Friends</a>
-		<li><a href="#limitations">Limitations</a>
-		</ol> 
-	<li> <a href="#the-script">The Script</a>
-    </ol>
-</details>
-<details>
-   <summary><a href="#the-web-of-data-2-actors-and-streams">The Web of Data 2 - Actors and Streams</summary>
-   <ol>
-     <li><a href="">Fetching resources with Akka Http</a>
-     <ol> 
-        <li><a href="#imports">Imports</a>
-        <li><a href="#strongly-typed-mime-types">Strongly Typed Mime Types</a>  
-        <li><a href="#geting-a-resource-from-the-web">GETing a resource from the web</a>
-        <li><a href="#working-with-graphs-and-pointed-graphs">Working with graphs and pointed graphs</a>
-     </ol>
-     <li><a href="jumping-around-in-streams">Jumping around in Streams</a>
-     <ol>
-     </ol>
-</details>
-<details>
-<summary><a href="#appendix">Appendix</a></summary> 
- <ol>
-  <li><a href="#references">References</a>
-  <li><a href="#todo">Todo</a>
- </ol> 	
-</details>
+<ol><li><a href=\"#the-ammonite-shell\">The Ammonite Shell</a><ol><li><a href=\"#why-ammonite\">Why Ammonite?</a><li><a href=\"#ammonite-and-banana-rdf\">Ammonite and Banana-RDF</a><li><a href=\"#constructing-and-querying-rdf-graphs\">Constructing and querying RDF Graphs</a></ol><li><a href=\"#the-web-of-data-1-threads-and-futures\">The Web of Data 1: Threads and Futures</a><ol><li><a href=\"#fetching-a-graph\">Fetching a graph</a><li><a href=\"#following-links\">Following links</a><ol><li><a href=\"#purpose-and-method\">Purpose and method</a><li><a href=\"#fetching-and-parsing-docs\">Fetching and parsing docs</a><li><a href=\"#exploring-a-remotely-loaded-graph\">Exploring a remotely loaded graph</a><li><a href=\"#efficiency-improvements-asynchrony-and-caching\">Efficiency improvements: Asynchrony and Caching</a><li><a href=\"#finding-the-conscientious-friends\">Finding the Conscientious Friends</a><li><a href=\"#limitations\">Limitations</a></ol><li><a href=\"#the-script\">The Script</a></ol><li><a href=\"#the-web-of-data-2---actors-and-streams\">The Web of Data 2 - Actors and Streams</a><ol><li><a href=\"#actors-and-streams-with-akka\">Actors and Streams with Akka</a><ol><li><a href=\"#imports\">Imports</a><li><a href=\"#strongly-typed-mime-types\">Strongly Typed Mime Types</a><li><a href=\"#geting-a-resource-from-the-web\">GETing a resource from the web</a><li><a href=\"#working-with-graphs-and-pointedgraphs\">Working with Graphs and PointedGraphs</a></ol><li><a href=\"#jumping-around-in-streams\">Jumping Around in Streams</a></ol><li><a href=\"#appendix\">Appendix</a><ol><li><a href=\"#references\">References</a><li><a href=\"#todo\">Todo</a></ol></ol>
 
 # The Ammonite Shell
 
@@ -296,7 +199,7 @@ You can explore more examples by looking at the test suite, starting from [the d
 # The Web of Data 1: Threads and Futures
 
 
-# Fetching a graph
+## Fetching a graph
 
 Building our own graph and querying it is not very informative. 
 So let's try getting some information from the world wide web. 

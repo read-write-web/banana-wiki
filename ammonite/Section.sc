@@ -1,11 +1,12 @@
 import ammonite.ops._
 
 object Wiki {
- def apply(wikistr: String) = markDownSplit(wikiStr)
+ def apply(wikiStr: String) = markDownSplit(wikiStr)
 }
 
 case class Wiki(title: String, body: String, val subsections: List[Wiki]) {
   lazy val fileName: String = title.trim().replaceAll("\\s+","_")
+  lazy val size: Int = subsections.foldLeft(1)((n,w) => n+w.size)
 }
 
 def markDownSplit(input: String, depth: Int = 0): Wiki = {
@@ -42,24 +43,23 @@ def writeSubDirBasedWiki(wiki: Wiki, path: Path): Unit = {
 }
 
 def indexWiki(wiki: Wiki): String = {
-  val parsedForhtml = "#" + wiki.title.filter(c =>
-    Character.isLetterOrDigit(c) || c == ' ' || c == '-').trim.replaceAll("\\s+", "-").toLowerCase
-  val parseDForTitle = wiki.title.replaceFirst("#", " ").trim
+  val fragment = "#" + wiki.title.filter{c =>
+                 Character.isLetterOrDigit(c) || c == ' ' || c == '-'
+              }.trim.replaceAll("\\s+", "-").toLowerCase
+  val htmlTitle = wiki.title.replaceFirst("#+", "").trim
+  val titleAnchor = s"""<a href="$fragment">$htmlTitle</a>"""
 
-  if(wiki.subsections.isEmpty){
-    s"""<li> <a href="$parsedForhtml">$parseDForTitle</a>"""
-  }
-  else{
-    s"""<details>
-    <summary><a href="$parsedForhtml">$parseDForTitle</a></summary>
-    <ol>
-    ${wiki.subsections.map { subWiki =>
-      indexWiki(subWiki)
-    }.mkString("\n")}
-    </ol>
-    </details>"""
-  }
+  val subList = wiki.subsections.map { indexWiki(_) }
+  def subMarkup = if (subList.isEmpty) "" else subList.mkString("<ol><li>","<li>","</ol>")
+   
+  if (wiki.title.isEmpty) {
+      if (wiki.subsections.size == 1) indexWiki(wiki.subsections.head)
+      else subMarkup
+  } else 
+     titleAnchor + subMarkup
+   
 }
+
 
 def ParseDocument(inputFile: ammonite.ops.Path, outputDir: ammonite.ops.Path){
   writeSubDirBasedWiki(markDownSplit(read! inputFile), outputDir)
