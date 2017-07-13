@@ -123,7 +123,7 @@ object Web {
 
 
    implicit class HttResPG(val h: PGWeb) extends AnyVal {
-    def jump(rel: Sesame#URI)(implicit web: Web): List[Future[PGWeb]] =
+    def jump(rel: Rdf#URI)(implicit web: Web): List[Future[PGWeb]] =
           (h.content/rel).toList.map{ pg =>
               if (pg.pointer.isURI) try {
                    web.pointedGET(AkkaUri(pg.pointer.toString))
@@ -132,6 +132,9 @@ object Web {
                  }
               else Future.successful(h.copy(content=pg))
        }
+
+     //def jumps(rel: Rdf#URI)(implicit web: Web): Stream[PGWeb] {
+     //}
     } 
 
     import scala.collection.immutable 

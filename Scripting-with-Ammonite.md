@@ -823,14 +823,14 @@ on those actors and an HTTP library built on that Stream model (for more detail 
 
 But there are a few other nice things that come out of the box with Akka. The Akka Http client
 library makes sure that requests to web servers are limited so as not to overload a host and
-risk being banned from the hosts operator.
+risk being banned from the hosts operator. See the explanation for [Pool overflow and the max-open-requests setting](http://doc.akka.io/docs/akka-http/current/scala/http/client-side/pool-overflow.html#pool-overflow-and-the-max-open-requests-setting). It is worth looking at the [akka-http-core Reference Config File](https://github.com/akka/akka-http/blob/master/akka-http-core/src/main/resources/reference.conf#L223) to see what other parameters can be tuned.
 
 
 ### Imports
 
 In this section we will show how to build some simple hyper data based applications based on
 streams and banana-rdf in order to overcome the previous limitations we discovered with threads
-and Futures. We will do this by going over the Ammonite Script 
+and Futures. We will do this by going over important parts of the Ammonite Script 
 [akkaHttp.sc](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/ammonite/akkaHttp.sc) 
 that has been placed in this wiki.
 
@@ -877,10 +877,10 @@ This time we will not mention the `Sesame` implementation of banana-rdf
 explicity when using each types, as we did in the previous section 
 instead  we will just use the `Rdf` value imported by Sesame which 
 identifies that with Sesame. If we switch to the well known Java Jena 
-library, or our banana's own `Plantain` library, none of the code
- will need to change.
-
-Well excpet the few imports where those names appear
+library, or our banana's own `Plantain` library, those will import an
+identically named `Rdf` value but this time tied to the different implementation.
+As a result the only thing we will need to change are the 
+few imports where those names appear:
 
 ```scala
 import $ivy.`org.w3::banana-sesame:0.8.4-SNAPSHOT`
@@ -907,6 +907,9 @@ mime types, so we just build them ourselves in the `RdfMediaTypes` object.
    val `application/ld+json` = applicationWithOpenCharset("ld+json","jsonld")
 ```
 
+For [RDFa](https://rdfa.info/) we can just use the Akka provided default 
+HTML mime type.
+
 We can then create our Unmarshallers for the 4 most used rdf mime types, which
 will be used to transform the stream of an HTTP connection to an `Rdf#Graph`.
 
@@ -927,6 +930,8 @@ will be used to transform the stream of an HTTP connection to an `Rdf#Graph`.
   }
 ```
 
+_Todo: add RDFa unmarshaller_
+
 Notice that because banana-rdf does not have a non-blocking parser API, we need to
 read the whole string into memory and then parse it. Non blocking streaming parsers
 could be very useful in many scenarios such as when the aim is just to save the data
@@ -935,7 +940,6 @@ to a database, or in the case where the need is just to pass it along. See
 even here it is clear that it could save having to store the original stream in
 memory, and just construct the graph.
 
-_Todo: Add an RDFa html parser._
 _Todo: show how the mime types are strongly typed_
 
 ### GETing a resource from the web
