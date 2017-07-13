@@ -12,9 +12,8 @@ def markDownSplit(input: String, depth: Int = 0): Wiki = {
   val wikiList = input.split(creatRegEx).toList
   val head::tail = wikiList
   if(head.charAt(0) == '#'){
-    val titleAndBody = head.split("\n").toList
-    val title: String = titleAndBody.head
-    val body: String = titleAndBody.drop(1).mkString("")
+    val splitpos = head.indexOf("\n")
+    val (title, body) = if (splitpos<0) (head,"") else head.splitAt(splitpos)
     Wiki(title , body, tail.map(markDownSplit(_ , depth + 1)))
   }
   else{
@@ -39,6 +38,6 @@ def writeSubDirBasedWiki(wiki: Wiki, path: Path): Unit = {
   }
 }
 
-def ParseDocument(input: ammonite.ops.Path, output: ammonite.ops.Path){
-  writeSubDirBasedWiki(markDownSplit(read! input), output)
+def ParseDocument(inputFile: ammonite.ops.Path, outputDir: ammonite.ops.Path){
+  writeSubDirBasedWiki(markDownSplit(read! inputFile), outputDir)
 }
