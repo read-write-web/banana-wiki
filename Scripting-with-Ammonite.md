@@ -1018,6 +1018,7 @@ Once one moves to RDF one can follow links that are much more strongly typed: in
  But in cases where we wish to process the results as they come in: perhaps we want our User Interface to start displaying information as it is received; or perhaps  we want to allow some other process to start working with the partial information it has received to avoid flooding it with huge amounts of data to process all at once.
  The larger the potential amount of results can be, the more the streaming model of computation becomes beneficial. For infinitely many sequential requests, the streaming method of computation is the only one that can be used.
 
+ #### Streams of URIs
 
   Every stream needs a source of information to get working. Sources are equivalent to the arguments passed to a function: without the argument we cannot get a value. We can produce a stream from any Sequences. Here we do this by creating a source of [`AkkaUri`](http://doc.akka.io/api/akka-http/10.0.9/akka/http/scaladsl/model/Uri.html)s.
 
@@ -1025,6 +1026,8 @@ Once one moves to RDF one can follow links that are much more strongly typed: in
 def uriSource(uris: AkkaUri*): Source[AkkaUri,NotUsed] =  
      Source(immutable.Seq(uris:_*).to[collection.immutable.Iterable])
 ```
+
+#### A Stream of one PGWeb
 
 We can then transform that stream of inputs by applying asychronously a function to every element. Here we produce a
 new Source of PGWeb elements
@@ -1038,6 +1041,8 @@ val pg: Source[PGWeb, NotUsed] =
 ```
 
 Since we only started with a URI source of one element `timbl`, this is not very different just calling `web.pointedGET(uri)`. But it does show how we can use a Future to build a minimal Stream.
+
+#### A Stream of a few PGWebs
 
 Next we want to be able to transform such a source through a function that jumps from the initial pointed graphs to all the `rdfs:seeAlso` graphs attached to the pointer and add those to the stream. This is what the following flow does, taking an input stream of `PGWeb`s and outputting a stream of `Try[PGWeb]` - since we may have failures that we would like to know about when jumping to the  
 
@@ -1069,6 +1074,52 @@ val f = uriSource(timbl).mapAsync(1){uri => web.pointedGET(uri)}
 ```                   
 
 This will print a couple of results to the console before the future is even done. We could have done something else instead of printing out, such as calling another web service.
+
+#### A Stream of many
+
+Next we would like to follow the previous links by jumps through the `foaf.knows` relation to other graphs. Since people usually know more than a few people this should greatly increase the size of the streams.
+
+
+```scala
+def foafKnowsSource(webid: AkkaUri): Source[Try[PGWeb],_] =
+   uriSource(webid).mapAsync(1){uri => web.pointedGET(uri)}
+                .via(addSeeAlso)
+                .mapConcat{ //jump to remote foaf.knows
+                   case Success(pgweb) => pgweb.jump(foaf.knows).to[immutable.Iterable].map(neverFail(_))
+                   case failure => immutable.Iterable(Future.successful(failure))
+                }.via(flattenFutureFlow(50))
+```
+
+Here we have added the `.mapConcat{ ...}` function to the code discussed previously, in order to jump over the `foaf.knows` relation and reach the friends profiles. This is illustrated by the arrows coming out of the server `timbl.com` in the above diagram and pointing each to various resources on a number of different servers shown on the right of the diagram.
+
+If we want to run this and view the results as the arrives we can
+
+```scala
+foafKnowsSource(timbl).runForeach{ trypgw =>
+    println(trypgw.map(_.origin))
+ }
+```
+
+For a full view of the returned structures we can fold the stream
+into a list
+
+```scala
+val m = foafKnowsSource(timbl).toMat(
+       Sink.fold(List[Try[PGWeb]]()
+    ){ case (l,t)=> t::l })(Keep.right)
+val r = m.run
+```
+
+This will return a resulting Future, which will be complete only when all the requests have been made. But it can be very useful to then look at
+the returned data structure to see what the failures are due to.
+
+```
+val data = r.value.get.get
+browse(data)
+```
+
+#### Finding the conscientious friends II
+
 
 
 # Appendix

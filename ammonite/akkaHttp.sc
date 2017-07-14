@@ -156,11 +156,12 @@ object Web {
     * links, with very simple explanations as to what went wrong accessing those
     * (hence the Try).
     */
-   def foafKnowsSource(me: AkkaUri): Source[Try[PGWeb],_] =
-      uriSource(me).mapAsync(1){uri => web.pointedGET(uri)}
-                   .via(addSeeAlso)
-                   .mapConcat{ //jump to remote foaf.knows
-                      case Success(hrpg) => hrpg.jump(foaf.knows).to[immutable.Iterable].map(neverFail(_))
+   def foafKnowsSource(webid: AkkaUri): Source[Try[PGWeb],_] =
+      uriSource(webid)
+           .mapAsync(1){uri => web.pointedGET(uri)}
+                      .via(addSeeAlso)
+                      .mapConcat{ //jump to remote foaf.knows
+                      case Success(pgweb) => pgweb.jump(foaf.knows).to[immutable.Iterable].map(neverFail(_))
                       case failure => immutable.Iterable(Future.successful(failure))
                    }.via(flattenFutureFlow(50))
 
