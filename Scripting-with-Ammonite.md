@@ -999,9 +999,12 @@ in one line.
 ## Jumping Around in Streams
 
 So as a quick reminder on what we want to do from our work in the previous section in _The Web of Data 1_: we wish to be able to
-start from a URL, fetch it, find specific links from there to other pages which may be on servers owned by other organisations - and we will take this as our base example as it is what distinguishes linked data from other data found on the web - explore the data we get there, in order to perhaps get yet more data from links we have found there, which we can then explore by fetching those documents.
 
-![jumping the foaf:knows links](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/jumpingAround.png)
+1. start from a [WebID](https://www.w3.org/2005/Incubator/webid/spec/identity/) which is a URL for a person - we have illustrated this in the graphic below with a URL that refers to Tim Berners Lee - whose sense is given by a PointedGraph constituted from the graph constituted at the document location of the URI without the fragment, 
+2. find specific links from there to [`rdfs:seeAlso`](https://www.w3.org/TR/rdf-schema/#ch_seealso) documents in case the WebID owner has placed more information in different  resources which can be access controlled 
+3. and from either of those try to jump via the [`foaf:knows`](http://xmlns.com/foaf/0.1/knows) relation to the descriptions of those people as given by the owners of the names space of those URLs themselves, hosted on servers owned by potentially completely unrelated organisations.
+
+![jumping the foaf:knows links](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/WebID-foafKnows.jpg)
 
 This is what web crawlers for search engines do when the follow links from one web page to another, taking html data, parsing it in order to index the words, and extract links to new pages that they can then fetch. But as links in html pages have until recently been very weakly typed, the only thing one can glean from such links automatically are that there are links between two pages and that the link has been taged in some way.  [RDFa](https://rdfa.info/) deployment is of course changing the situation even here.
 
