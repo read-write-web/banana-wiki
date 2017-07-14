@@ -48,7 +48,8 @@ implicit val materializer = ActorMaterializer(
 implicit val ec: ExecutionContext = system.dispatcher
 
 //just to play with 
-val me = AkkaUri("http://bblfish.net/people/henry/card#me")
+val bblfish = AkkaUri("http://bblfish.net/people/henry/card#me")
+val timbl = AkkaUri("https://www.w3.org/People/Berners-Lee/card#i")
 
 object RdfMediaTypes {
    import akka.http.scaladsl.model
@@ -85,7 +86,7 @@ object RdfMediaTypes {
 }
 
 object Web {
-    type PGWeb = HttpRes[PointedGraph[Rdf]] 
+    type PGWeb = IRepresentation[PointedGraph[Rdf]] 
 
     trait WebException extends java.lang.RuntimeException with NoStackTrace with Product with Serializable
     case class HTTPException(resourceUri: String, msg: String) extends WebException
@@ -117,7 +118,7 @@ object Web {
    }
 
    //interpreted HttpResponse
-   case class HttpRes[C](origin: AkkaUri, status: StatusCode, headers: Seq[HttpHeader], content: C) {
+   case class IRepresentation[C](origin: AkkaUri, status: StatusCode, headers: Seq[HttpHeader], content: C) {
       def map[D](f: C => D) = this.copy(content=f(content))
    }
 
@@ -132,7 +133,8 @@ object Web {
                  }
               else Future.successful(h.copy(content=pg))
        }
-
+     
+     // does it make sense to use Http().superPool(...) ?
      //def jumps(rel: Rdf#URI)(implicit web: Web): Stream[PGWeb] {
      //}
     } 
@@ -148,7 +150,7 @@ object Web {
    def flattenFutureFlow[X](n: Int=1): Flow[Future[X],X,_] = Flow[Future[X]].mapAsyncUnordered(n)(identity)
    
    /**
-    * return an Akka Source of Try[HttpRes[Rdf#PointedGraphs]] starting 
+    * return an Akka Source of Try[IRepresentation[Rdf#PointedGraphs]] starting 
     * from the me WebID, and including any relevant rdfs.seeAlso linked files.
     * The source is useful for finding all the linked to friends, including broken
     * links, with very simple explanations as to what went wrong accessing those 
@@ -227,7 +229,7 @@ class Web(implicit ec: ExecutionContext) {
    
   
 
-   def GETrdf(uri: AkkaUri): Future[HttpRes[Rdf#Graph]] = {
+   def GETrdf(uri: AkkaUri): Future[IRepresentation[Rdf#Graph]] = {
      import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
      import akka.util.ByteString
 
@@ -251,7 +253,7 @@ class Web(implicit ec: ExecutionContext) {
                     case Success(tryParse) => 
                           tryParse match {
                              case Success(g) => 
-                                Future.successful(HttpRes[Rdf#Graph](uri,status,headers,g))
+                                Future.successful(IRepresentation[Rdf#Graph](uri,status,headers,g))
                              case Failure(e) =>  
                                 bytesF.transform{ tryParse =>
                                   Failure(ParseException(uri.toString,status,headers,entity.contentType,tryParse,e))
@@ -267,7 +269,7 @@ class Web(implicit ec: ExecutionContext) {
       }
     }
 
-    def pointedGET(uri: AkkaUri): Future[HttpRes[PointedGraph[Rdf]]] = 
+    def pointedGET(uri: AkkaUri): Future[PGWeb] = 
          GETrdf(uri).map(_.map(PointedGraph[Rdf](uri.toRdf,_)))
     
 

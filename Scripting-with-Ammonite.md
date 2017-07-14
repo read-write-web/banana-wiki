@@ -974,31 +974,43 @@ finding those [see issue 1276](https://github.com/akka/akka-http/issues/1276).)
 Next we need to parse the content returned into an RDF Graph when possible. This
 is done by the `GETrdf` function.
 
-```
-def GETrdf(uri: AkkaUri): Future[HttpRes[Rdf#Graph]]
+```Scala
+def GETrdf(uri: AkkaUri): Future[IRepresentation[Rdf#Graph]]
 ```
 
-This returns a `HttpRes` object which allows one to keep as much information about the headers
-which we may need later for a Cache object for example (e.g to determine  if it 
-need to fetch a newer version of the resource) and it is generic on the type.
+This returns Futures of  `IRepresentation[Rdf#Graph]` type objects. The IRepresentation type allows us to keep as much information about the Resonse object, such as headers and status code as we may need these later for a Cache object for example, to determine  if the representation is stale and if therefore a new representation needs to be fetched from the `origin` resource). This data structure is more flexible that the Akka representation in that it allows us to begin interpreting the content into more advanced structures such as in the case above, into an `Rdf#Graph`. So we move from a pure binary representation of a resource to an interpreted one.
 
-```
- case class HttpRes[C](origin: AkkaUri, status: StatusCode, headers: Seq[HttpHeader], content: C) {
+```Scala
+case class IRepresentation[C](origin: AkkaUri, status: StatusCode, headers: Seq[HttpHeader], content: C) {
       def map[D](f: C => D) = this.copy(content=f(content))
    }
 ```
 
-This allows us then allows us to define a function to the graph to a pointed graph
+We can then provide a map function to allow us to map between types of content,
+so we can then easily define functions from a `Rdf#Graph` to `PointedGraph[Rdf]` 
 in one line.
 
-```
+```Scala
   def pointedGET(uri: AkkaUri): Future[HttpRes[PointedGraph[Rdf]]] =
          GETrdf(uri).map(_.map(PointedGraph[Rdf](uri.toRdf,_)))
 ```
 
 
-
 ## Jumping Around in Streams
+
+So as a quick reminder on what we want to do from our work in the previous section in _The Web of Data 1_: we wish to be able to
+start from a URL, fetch it, find specific links from there to other pages which may be on servers owned by other organisations - and we will take this as our base example as it is what distinguishes linked data from other data found on the web - explore the data we get there, in order to perhaps get yet more data from links we have found there, which we can then explore by fetching those documents.
+
+![jumping the foaf:knows links](https://raw.githubusercontent.com/wiki/banana-rdf/banana-rdf/img/jumpingAround.png)
+
+This is what web crawlers for search engines do when the follow links from one web page to another, taking html data, parsing it in order to index the words, and extract links to new pages that they can then fetch. But as links in html pages have until recently been very weakly typed, the only thing one can glean from such links automatically are that there are links between two pages and that the link has been taged in some way.  [RDFa](https://rdfa.info/) deployment is of course changing the situation even here.
+
+
+### From Futures to Streams
+
+
+
+
 
 # Appendix
 
