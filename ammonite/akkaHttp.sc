@@ -201,11 +201,11 @@ class Web(implicit ec: ExecutionContext) {
    import Web._
 
 
-   def GET(uri: AkkaUri, maxRedirect: Int=4): Future[HttpResponse] = httpRequire(rdfRequest(uri),maxRedirect)
+   def GETRdfDoc(uri: AkkaUri, maxRedirect: Int=4): Future[HttpResponse] = GET(rdfRequest(uri),maxRedirect)
 
    //todo: add something to the response re number of redirects
    //see: https://github.com/akka/akka-http/issues/195
-   def httpRequire(req: HttpRequest, maxRedirect: Int = 4)(implicit
+   def GET(req: HttpRequest, maxRedirect: Int = 4)(implicit
       system: ActorSystem, mat: Materializer): Future[HttpResponse] = {
       try {
          import StatusCodes._
@@ -217,7 +217,7 @@ class Web(implicit ec: ExecutionContext) {
                   log.info(s"received a ${resp.status} for ${req.uri}")
                   resp.header[headers.Location].map { loc =>
                   val newReq = req.copy(uri = loc.uri)
-                  if (maxRedirect > 0) httpRequire(newReq, maxRedirect - 1) else Http().singleRequest(newReq)
+                  if (maxRedirect > 0) GET(newReq, maxRedirect - 1) else Http().singleRequest(newReq)
                  }.getOrElse(Future.failed(HTTPException(req.uri.toString,s"Location header not found on ${resp.status} for ${req.uri}")))
               }
               case _ => Future.successful(resp)
@@ -241,7 +241,7 @@ class Web(implicit ec: ExecutionContext) {
         new java.lang.String(array).take(210) //could be something to be set by config
      }
 
-     GET(uri).flatMap {
+     GETRdfDoc(uri).flatMap {
         case HttpResponse(status,headers,entity,protocol) => {
             def bytesF: Future[String] =
               entity.dataBytes.take(1).runFold(ByteString.empty)({ case (acc, b) => acc ++ b }).transform{ tryByteString =>
