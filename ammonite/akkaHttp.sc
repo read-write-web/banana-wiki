@@ -34,14 +34,14 @@ import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
 import scala.util.{Try,Success,Failure}
 //see http://doc.akka.io/docs/akka/snapshot/scala/general/configuration.html#listing-of-the-reference-configuration
-val shortScriptConf = ConfigFactory.parseString("""
+/*val shortScriptConf = ConfigFactory.parseString("""
    |akka {
    |   loggers = ["akka.event.Logging$DefaultLogger"]
    |   logging-filter = "akka.event.DefaultLoggingFilter"
    |   loglevel = "ERROR"
    |}
- """.stripMargin)
-implicit val system = ActorSystem("akka_ammonite_script",shortScriptConf)
+ """.stripMargin)*/
+implicit val system = ActorSystem("akka_ammonite_script")
 val log = Logging(system.eventStream, "banana-rdf")
 implicit val materializer = ActorMaterializer(
                 ActorMaterializerSettings(system).withSupervisionStrategy(Supervision.resumingDecider))
@@ -278,4 +278,3 @@ class Web(implicit ec: ExecutionContext) {
 
 //make life easier in the shell by setting up the environment
 implicit val web = new Web()
-import $exec.FutureWrapper
