@@ -9,6 +9,10 @@ import scala.util.Try
 sealed trait Link[T]{
   val tag: String
   val uri: T
+  def map[B](f: T=>B): Link[B] = this match {
+     case ImageLink(tag, uri) => ImageLink(tag, f(uri))
+     case HyperLink(tag, uri) => HyperLink(tag, f(uri))
+  }
 }
 
 case class ImageLink[T](tag: String, uri: T) extends Link[T]
@@ -25,12 +29,4 @@ def gatherLinks(wikiLine: String): Seq[Link[String]] = {
   }
 }
 
-def makeAkkaUri(link: Link[String]): Try[Link[Uri]] = link match {
-  case ImageLink(tag, uri) => Try(ImageLink(link.tag, Uri(link.uri)))
-  case HyperLink(tag, uri) => Try(HyperLink(link.tag, Uri(link.uri)))
-}
 
-def makeJavaUri(link: Link[String]): Try[Link[URI]] = link match {
-  case ImageLink(tag, uri) => Try(ImageLink(link.tag, URI.create(link.uri)))
-  case HyperLink(tag, uri) => Try(HyperLink(link.tag, URI.create(link.uri)))
-}
