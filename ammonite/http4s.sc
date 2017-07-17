@@ -7,7 +7,7 @@
       http4s: http://http4s.org/
   *
   * you can run this from ammonite shell with:
-  
+
      import $exec.http4s
      //implicit val F = fs2.Async[fs2.Task]
      val web = new Web()
@@ -15,7 +15,7 @@
      val friendTask = gf2.runLog
      val friendFut = friendTask.unsafeRunAsyncFuture
 */
-     
+
 
 import coursier.core.Authentication, coursier.MavenRepository
 import coursier.core.Authentication, coursier.MavenRepository
@@ -55,10 +55,10 @@ object Decoders {
    import RdfMediaTypes._
    import scala.util.{Try,Success,Failure}
    import org.http4s._
-   import org.w3.banana.io.RDFReader 
+   import org.w3.banana.io.RDFReader
    import cats.data._
 
-   private def decoderForRdfReader(mt: MediaRange, mts: MediaRange*)(reader: RDFReader[Rdf,Try,_], errmsg: String ) = 
+   private def decoderForRdfReader(mt: MediaRange, mts: MediaRange*)(reader: RDFReader[Rdf,Try,_], errmsg: String ) =
     EntityDecoder.decodeBy[Rdf#Graph](mt,mts: _*){ msg =>
        println(s"decoding in ${Thread.currentThread.getName} fetched ")
        EitherT(
@@ -73,13 +73,13 @@ object Decoders {
       )
    }
 
-   implicit val turtle = decoderForRdfReader(`text/turtle`)(turtleReader,"Rdf Turtle Reader failed") 
+   implicit val turtle = decoderForRdfReader(`text/turtle`)(turtleReader,"Rdf Turtle Reader failed")
 
-   implicit val rdfxml = decoderForRdfReader(`application/rdf+xml`)(rdfXMLReader,"Rdf Rdf/XML Reader failed")  
+   implicit val rdfxml = decoderForRdfReader(`application/rdf+xml`)(rdfXMLReader,"Rdf Rdf/XML Reader failed")
 
-   implicit val ntriples = decoderForRdfReader( `application/ntriples`)(ntriplesReader,"NTriples  Reader failed")  
+   implicit val ntriples = decoderForRdfReader( `application/ntriples`)(ntriplesReader,"NTriples  Reader failed")
 
-   implicit val jsonld = decoderForRdfReader(`application/ld+json`)(jsonldReader,"Json-LD Reader failed")  
+   implicit val jsonld = decoderForRdfReader(`application/ld+json`)(jsonldReader,"Json-LD Reader failed")
 
    implicit val allrdf = turtle orElse rdfxml orElse ntriples orElse jsonld
 }
@@ -87,7 +87,7 @@ object Decoders {
 object Web {
    import org.http4s
    implicit class UriW(val uri: http4s.Uri)  extends AnyVal {
-         def fragmentLess: http4s.Uri = 
+         def fragmentLess: http4s.Uri =
             if (uri.fragment.isEmpty) uri else uri.copy(fragment=None)
     }
 }
@@ -96,10 +96,10 @@ object Web {
 class Web(implicit val strat: fs2.Strategy) {
    import scala.util.control.NoStackTrace
    import scala.util.{Either,Right,Left}
-   import org.http4s 
+   import org.http4s
    import fs2.util.Attempt
    import Web._
-   
+
    val threadPooleExec = new ThreadPoolExecutor(2,3,20,java.util.concurrent.TimeUnit.SECONDS,new java.util.concurrent.LinkedBlockingQueue[Runnable])
    val dbc =org.http4s.client.blaze.BlazeClientConfig.defaultConfig
    val minBlazeConfig = dbc.copy(customExecutor=Some(threadPooleExec))
@@ -115,7 +115,7 @@ class Web(implicit val strat: fs2.Strategy) {
        import org.http4s.{Request,Headers,Header}
        val u = http4s.Uri.fromString(uri.toString).right.get
        val req = new Request(
-                     uri=u.fragmentLess, 
+                     uri=u.fragmentLess,
                      headers=Headers(
                         Header("Accept","application/rdf+xml,text/turtle,application/ld+json,text/n3;q=0.2"))
                 )
@@ -124,25 +124,24 @@ class Web(implicit val strat: fs2.Strategy) {
                emptyGraph
        }).flatMap( _ =>
                httpClient.fetchAs[Rdf#Graph](req).async.handleWith({ case err => fs2.Task.fail(HTTPException(u,err)) })
-       ).attempt  
+       ).attempt
        toPointedTask(uri,graphTsk).async
    }
 
   def jump(pg: PointedGraph[Rdf], rel: Rdf#URI): fs2.Stream[fs2.Task,Attempt[PointedGraph[Rdf]]] = {
      val pgTaskSeq = (pg/rel).toSeq.collect {
-           case PointedGraph(u,_) if u.isURI => 
+           case PointedGraph(u,_) if u.isURI =>
               getPointed(u.asInstanceOf[Rdf#URI]) //<- the case match should deal with type
-     } 
+     }
      fs2.Stream.emits(pgTaskSeq).flatMap(fs2.Stream.eval)
   }
-   
+
    val foaf = FOAFPrefix[Rdf]
    def goodFriend(uri: Rdf#URI) = {
       fs2.Stream.eval(getPointed(uri)).flatMap(_ match {
-           case Right(pg) => jump(pg,foaf.knows) 
-           case l@Left(e) => fs2.Stream(l) 
+           case Right(pg) => jump(pg,foaf.knows)
+           case l@Left(e) => fs2.Stream(l)
       })
    }
-   
-}
 
+}

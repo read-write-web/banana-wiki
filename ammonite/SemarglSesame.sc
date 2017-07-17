@@ -39,6 +39,8 @@ import org.openrdf.rio.helpers.BasicParserSettings
 import org.openrdf.rio.helpers.XMLParserSettings
 import org.semarglproject.rdf.ParseException
 import org.openrdf.rio.RDFParseException
+import org.semarglproject.sesame.rdf.rdfa.SemarglParserSettings
+
 
 case class TrackRDFParseException(val t: Throwable) extends RDFParseException(t)
 
@@ -55,25 +57,41 @@ class SemarglRdfXMLParser extends RDFParser with ProcessorGraphHandler {
   var parseErrorListener: ParseErrorListener = null
   var preserveBNodeIDs = true
 
-  val streamProcessor = {
+  val streamProcessor : StreamProcessor = {
         val sp = new StreamProcessor(RdfXmlParser.connect(SesameSink.connect(null)))
-         sp.setProperty(StreamProcessor.PROCESSOR_GRAPH_HANDLER_PROPERTY, this)
-         sp
+        val xmlreader = org.xml.sax.helpers.XMLReaderFactory.createXMLReader()
+        sp.setProperty(StreamProcessor.PROCESSOR_GRAPH_HANDLER_PROPERTY, this)
+        sp.setProperty(StreamProcessor.XML_READER_PROPERTY,xmlreader)
+        sp
     }
 
 
-  def error(x$1: String,x$2: String): Unit = ???
-  def info(x$1: String,x$2: String): Unit = ???
-  def warning(x$1: String,x$2: String): Unit = ???
+  def error(warningClass: String,message: String): Unit = if (parseErrorListener != null) {
+            parseErrorListener.warning(message, -1, -1);
+        }
+
+  def info(warningClass: String, message: String): Unit = {}
+
+  def warning(warningClass: String,message: String): Unit = if (parseErrorListener != null) {
+            parseErrorListener.error(message, -1, -1);
+        }
 
   // Members declared in org.openrdf.rio.RDFParser
   def getParserConfig(): org.openrdf.rio.ParserConfig = parserConfig
-  def setParserConfig(config: org.openrdf.rio.ParserConfig): Unit =
+  def setParserConfig(config: org.openrdf.rio.ParserConfig): Unit = {
     this.parserConfig = config
+    refreshSettings
+  }
 
   def getRDFFormat(): org.openrdf.rio.RDFFormat =  org.openrdf.rio.RDFFormat.RDFXML
 
-  def getSupportedSettings(): java.util.Collection[org.openrdf.rio.RioSetting[_]] = ???
+  def getSupportedSettings(): java.util.Collection[org.openrdf.rio.RioSetting[_]] = {
+    val result = new java.util.ArrayList[org.openrdf.rio.RioSetting[_]](3);
+        result.add(BasicParserSettings.PRESERVE_BNODE_IDS)
+        result.add(SemarglParserSettings.PROCESSOR_GRAPH_ENABLED)
+        result.add(SemarglParserSettings.CUSTOM_XML_READER) //looks like it could be useful...
+        return result;
+  }
   def parse(in: java.io.InputStream,base: String): Unit = {
     val reader = new InputStreamReader(in, Charset.forName("UTF-8"))
     try { parse(reader,base) } finally {
@@ -88,16 +106,25 @@ class SemarglRdfXMLParser extends RDFParser with ProcessorGraphHandler {
       case e: ParseException  => throw TrackRDFParseException(e);
     }
   }
-  def setDatatypeHandling(x$1: org.openrdf.rio.RDFParser.DatatypeHandling): Unit = ???
+  def setDatatypeHandling(x$1: org.openrdf.rio.RDFParser.DatatypeHandling): Unit = {}
   def setParseErrorListener(listener: org.openrdf.rio.ParseErrorListener): Unit = {
     parseErrorListener = listener
   }
 
-  def setParseLocationListener(x$1: org.openrdf.rio.ParseLocationListener): Unit = ???
+  def setParseLocationListener(x$1: org.openrdf.rio.ParseLocationListener): Unit = {}
 
-  def setVocabExpansionEnabled(vocabExpansionEnabled: Boolean): Unit = ???
+  def setVocabExpansionEnabled(vocabExpansionEnabled: Boolean): Unit = {
 
-  def setPreserveBNodeIDs(x$1: Boolean): Unit = ???
+  }
+
+  def setProcessorGraphEnabled(processorGraphEnabled: Boolean): Unit = {
+      parserConfig.set[java.lang.Boolean](SemarglParserSettings.PROCESSOR_GRAPH_ENABLED, processorGraphEnabled)
+      refreshSettings()
+  }
+  def setPreserveBNodeIDs(preserveBNodeIDs: Boolean): Unit = {
+    parserConfig.set[java.lang.Boolean](BasicParserSettings.PRESERVE_BNODE_IDS, preserveBNodeIDs);
+    refreshSettings();
+  }
   def setRDFHandler(handler: org.openrdf.rio.RDFHandler): Unit = {
      streamProcessor.setProperty(SesameSink.RDF_HANDLER_PROPERTY, handler);
   }
@@ -105,9 +132,12 @@ class SemarglRdfXMLParser extends RDFParser with ProcessorGraphHandler {
   def setValueFactory(valueFactory: org.openrdf.model.ValueFactory): Unit = {
     streamProcessor.setProperty(SesameSink.VALUE_FACTORY_PROPERTY, valueFactory)
   }
-  def setVerifyData(x$1: Boolean): Unit = ???
+  def setVerifyData(x$1: Boolean): Unit = {}
 
   def refreshSettings(): Unit = {
+    streamProcessor.setProperty(StreamProcessor.XML_READER_PROPERTY,
+                parserConfig.get(SemarglParserSettings.CUSTOM_XML_READER))
+
     //todo: what should these be?
     //see https://github.com/semarglproject/semargl-sesame/blob/master/src/main/java/org/semarglproject/sesame/rdf/rdfa/SesameRDFaParser.java
     //eg:

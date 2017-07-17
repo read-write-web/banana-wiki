@@ -44,8 +44,10 @@ class SesameRDFaReader(implicit val ops: RDFOps[Sesame]) extends RDFReader[Sesam
 }
 
 class SesameRDFXMLReader(implicit val ops: RDFOps[Sesame]) extends RDFReader[Sesame, Try, RDFXML] {
+  import  org.openrdf.rio._
+
   def read(in: InputStream, base: String): Try[Sesame#Graph] = {
-    val xmlp = new SemarglSesame.SemarglRdfXMLParser()
+    val xmlp = Rio.createParser(RDFFormat.RDFXML)
     Try(xmlp.parseRdf(in,base))
   }
 
@@ -53,7 +55,7 @@ class SesameRDFXMLReader(implicit val ops: RDFOps[Sesame]) extends RDFReader[Ses
    * @param base the base URI to use, to resolve relative URLs found in the InputStream
    **/
  def read(reader: Reader, base: String): Try[Sesame#Graph] = {
-   val xmlp = new SemarglSesame.SemarglRdfXMLParser()
+   val xmlp = Rio.createParser(RDFFormat.RDFXML)
    Try(xmlp.parseRdf(reader,base))
  }
 
