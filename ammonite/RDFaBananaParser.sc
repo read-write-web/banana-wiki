@@ -14,7 +14,7 @@ import $ivy.`net.sourceforge.nekohtml:nekohtml:1.9.22`
 import java.io._
 import org.w3.banana._
 import org.w3.banana.io._
-import org.w3.banana.sesame.Sesame
+import org.w3.banana.jena.Jena
 
 import scala.util.Try
 import $file.SemarglSesame, SemarglSesame._

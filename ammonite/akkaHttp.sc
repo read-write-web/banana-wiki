@@ -9,15 +9,15 @@ interp.repositories() ++= Seq(MavenRepository(
 import scala.concurrent.ExecutionContext
 import com.typesafe.config._
 
-import $ivy.`org.w3::banana-sesame:0.8.4`
+import $ivy.`org.w3::banana-jena:0.8.5-SNAPSHOT`
 import org.w3.banana._
 import org.w3.banana.syntax._
-import org.w3.banana.sesame.Sesame
-import Sesame._
-import Sesame.ops._
+import org.w3.banana.jena.Jena
+import Jena._
+import Jena.ops._
 
 import $ivy.`com.typesafe.akka::akka-http:10.0.9`
-import $file.RDFaBananaParser, RDFaBananaParser.{SesameRDFaReader,SesameRDFXMLReader}
+// import $file.RDFaBananaParser, RDFaBananaParser.{SesameRDFaReader,SesameRDFXMLReader}
 
 //import $ivy.`ch.qos.logback:logback-classic:1.2.3`
 
@@ -94,7 +94,7 @@ object RdfMediaTypes {
               case `application/rdf+xml` => rdfXMLReader //new SesameRDFXMLReader()
               case `application/ntriples` => ntriplesReader
               case `application/ld+json` => jsonldReader
-              case `text/html` => new SesameRDFaReader()
+              // case `text/html` => new SesameRDFaReader()
            }
            reader.read(new java.io.StringReader(string),requestUri.toString).recoverWith{ case e=>
               Failure{ import entity._
@@ -103,7 +103,7 @@ object RdfMediaTypes {
            }
         }
         rdfunmarshaller.forContentTypes(`text/turtle`,`application/rdf+xml`,
-          `application/ntriples`,`application/ld+json`,`text/html`)
+          `application/ntriples`,`application/ld+json`)//,`text/html`)
   }
 
 }
