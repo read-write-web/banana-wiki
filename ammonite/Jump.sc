@@ -17,8 +17,8 @@ You can then do something like the following:
 
 @ val cache = new Cache()
 @ val bblFuture = cache.getPointed(URI("http://bblfish.net/people/henry/card#me"))
- 
-*/ 
+
+*/
 
 import coursier.core.Authentication, coursier.MavenRepository
 
@@ -29,6 +29,7 @@ interp.repositories() ++= Seq(MavenRepository(
 @
 
 import $ivy.`org.w3::banana-sesame:0.8.4`
+import $file.RDFaBananaParser, RDFaBananaParser.SesameRDFaReader
 import org.w3.banana._
 import org.w3.banana.syntax._
 import org.w3.banana.sesame.Sesame
@@ -36,7 +37,7 @@ import Sesame._
 import Sesame.ops._
 import scalaj.http._
 
-val foaf = FOAFPrefix[Sesame] 
+val foaf = FOAFPrefix[Sesame]
 
 import scala.util.{Try,Success,Failure}
 
@@ -45,7 +46,8 @@ def fetch(docUrl: Sesame#URI): Try[HttpResponse[scala.util.Try[Sesame#Graph]]] =
   assert (docUrl == docUrl.fragmentLess)
   Try( //we want to catch connection exceptions
    Http(docUrl.toString)
-    .header("Accept", "application/rdf+xml,text/turtle,application/ld+json,text/n3;q=0.2")
+    .header("Accept", "application/rdf+xml,text/turtle,application/ld+json,text/html;q=0.3,text/n3;q=0.2")
+    .option{_.setInstanceFollowRedirects(true)}
     .exec { case (code, headers, is) =>
       headers.get("Content-Type")
              .flatMap(_.headOption)
@@ -55,19 +57,21 @@ def fetch(docUrl: Sesame#URI): Try[HttpResponse[scala.util.Try[Sesame#Graph]]] =
         val ctype = ct.split(';')
         val parser = ctype(0).trim match {
           case "text/turtle" => Success(turtleReader)
+          case "text/n3" => Success(turtleReader) //perhaps we get something!
           case "application/rdf+xml" => Success(rdfXMLReader)
           case "application/n-triples" => Success(ntriplesReader)
           case "application/ld+json" => Success(jsonldReader)
+          case "text/html" => Success(new SesameRDFaReader())
           case ct => Failure(new java.lang.Exception("Missing parser for "+ct))
         }
-        parser.map{ p => 
+        parser.map{ p =>
              val attributes = ctype.toList.tail.flatMap(
              _.split(',').map(_.split('=').toList.map(_.trim))
           ).map(avl => (avl.head, avl.tail.headOption.getOrElse(""))).toMap
           val encoding = attributes.get("encoding").getOrElse("utf-8")
           (p, encoding)
         }
-       } flatMap { case (parser,encoding) =>  
+       } flatMap { case (parser,encoding) =>
         parser.read(new java.io.InputStreamReader(is, encoding), docUrl.toString)
       }
     }).recoverWith{case t => Failure(IOException(docUrl,t))}
@@ -115,10 +119,12 @@ class Cache(implicit val ex: ExecutionContext) {
               if (pg.pointer.isURI) Cache.this.getPointed(pg.pointer.asInstanceOf[Sesame#URI])
               else Future.successful(this.copy(pointedGraph=PointedGraph[Sesame](pg.pointer, pointedGraph.graph)))
        }
+       def /(rel: Sesame#URI): Seq[PointedGraphWeb] = (pointedGraph/rel).toSeq.map(pg=>PointedGraphWeb(webDocURL,pg,headers))
+       def point(uri: Sesame#URI) = this.copy(pointedGraph=PointedGraph[Sesame](uri,pointedGraph.graph))
     }
  }
 
-def sequenceNoFail[A](seq :Seq[Future[A]]): Future[Seq[Try[A]]] = 
+def sequenceNoFail[A](seq :Seq[Future[A]]): Future[Seq[Try[A]]] =
      Future.sequence{ seq.map(_.transform(Success(_)))}
 
 def conscientiousFriend(webID: Sesame#URI)(implicit cache: Cache): Future[Seq[(Sesame#URI, Option[PointedGraph[Sesame]])]] = {
