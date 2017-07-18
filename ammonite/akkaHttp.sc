@@ -55,23 +55,19 @@ val timbl = AkkaUri("https://www.w3.org/People/Berners-Lee/card#i")
 
 trait WebException extends java.lang.RuntimeException with NoStackTrace with Product with Serializable
 case class HTTPException(resourceUri: String, msg: String) extends WebException
+case class StatusCodeException(response: ResponseSummary) extends WebException
 case class ConnectionException(resourceUri: String, e: Throwable) extends WebException
 case class NodeTranslationException(graphLoc: String, problemNode: Rdf#Node, e: Throwable) extends WebException
 case class MissingParserException(
-  resourceUri: String,
-  statusCode: StatusCode,
-  contentType: ContentType,
+  response: ResponseSummary,
   initialContent: String
 ) extends WebException
 case class ParseException(
-  resourceUri: String,
-  status: StatusCode,
-  responseHeaders: Seq[HttpHeader],
-  contentType: ContentType,
+  response: ResponseSummary,
   initialContent: String,
   e: Throwable
 ) extends WebException
-
+case class LogException(history: List[ResponseSummary], e: Throwable)
 
 object RdfMediaTypes {
    import akka.http.scaladsl.model
@@ -93,10 +89,9 @@ object RdfMediaTypes {
    val `application/ld+json` = applicationWithOpenCharset("ld+json","jsonld")
 
 
-   def rdfUnmarshaller(
-     requestUri: AkkaUri, status: StatusCode,
-     headers: Iterable[HttpHeader]
-   )(implicit ec: ExecutionContext): FromEntityUnmarshaller[Rdf#Graph] =
+   def rdfUnmarshaller(response: ResponseSummary)(
+     implicit ec: ExecutionContext
+   ): FromEntityUnmarshaller[Rdf#Graph] =
       PredefinedFromEntityUnmarshallers.stringUnmarshaller flatMapWithInput { (entity, string) ⇒
         //todo: use non blocking parsers
          val readerOpt = entity.contentType.mediaType match { //<- this needs to be tuned!
@@ -109,18 +104,14 @@ object RdfMediaTypes {
          }
          readerOpt.map{ reader=>
            Future.fromTry {
-             reader.read(new java.io.StringReader(string),requestUri.toString) recoverWith {
-             case e => Failure(ParseException(
-               requestUri.toString, status,
-               headers.toSeq,entity.contentType,string.take(400),e)
+             reader.read(new java.io.StringReader(string),response.on.toString) recoverWith {
+             case e => Failure(
+               ParseException(response,string.take(400),e)
              )}
           }
         } getOrElse {
            scala.concurrent.Future.failed(
-             MissingParserException(
-               requestUri.toString, status,
-               entity.contentType,string.take(400)
-             )
+             MissingParserException(response,string.take(400))
            )
        }
     }
@@ -132,7 +123,6 @@ object Web {
     type PGWeb = IRepresentation[PointedGraph[Rdf]]
 
     import akka.http.scaladsl.model.MediaTypes.`text/html`
-
 
 
    val foaf = FOAFPrefix[Rdf]
@@ -237,30 +227,43 @@ object Web {
 
 }
 
+case class ResponseSummary(
+  on: AkkaUri, code: StatusCode,
+  header: Seq[HttpHeader], respTp: ContentType)
+
 class Web(implicit ec: ExecutionContext) {
    import Web._
 
 
-   def GETRdfDoc(uri: AkkaUri, maxRedirect: Int=4): Future[HttpResponse] = GET(rdfRequest(uri),maxRedirect)
+   def GETRdfDoc(uri: AkkaUri, maxRedirect: Int=4): Future[HttpResponse] = GET(rdfRequest(uri),maxRedirect).map(_._1)
 
    //todo: add something to the response re number of redirects
    //see: https://github.com/akka/akka-http/issues/195
-   def GET(req: HttpRequest, maxRedirect: Int = 4)(implicit
-      system: ActorSystem, mat: Materializer): Future[HttpResponse] = {
+   def GET(req: HttpRequest, maxRedirect: Int = 4,history: List[ResponseSummary]=List())(
+     implicit  system: ActorSystem, mat: Materializer
+   ): Future[(HttpResponse,List[ResponseSummary])] = {
       try {
-         import StatusCodes._
+         import StatusCodes.{Success,_}
          Http().singleRequest(req)
                .recoverWith{case e=>Future.failed(ConnectionException(req.uri.toString,e))}
                .flatMap { resp =>
+                 def summary = ResponseSummary(req.uri,resp.status,resp.headers,resp.entity.contentType)
             resp.status match {
-              case Found | SeeOther | TemporaryRedirect | PermanentRedirect => {
+              case Success(_) => Future.successful((resp,summary::history))
+              case Redirection(_) => {
                   log.info(s"received a ${resp.status} for ${req.uri}")
                   resp.header[headers.Location].map { loc =>
                   val newReq = req.copy(uri = loc.uri)
-                  if (maxRedirect > 0) GET(newReq, maxRedirect - 1) else Http().singleRequest(newReq)
+                  resp.discardEntityBytes()
+                  if (maxRedirect > 0)
+                     GET(newReq, maxRedirect - 1,summary::history)
+                  else Http().singleRequest(newReq).map((_,summary::history))
                  }.getOrElse(Future.failed(HTTPException(req.uri.toString,s"Location header not found on ${resp.status} for ${req.uri}")))
               }
-              case _ => Future.successful(resp)
+              case _ => {
+                resp.discardEntityBytes()
+                Future.failed(StatusCodeException(summary))
+              }
             }
          }
       } catch {
@@ -272,18 +275,12 @@ class Web(implicit ec: ExecutionContext) {
 
    def GETrdf(uri: AkkaUri): Future[IRepresentation[Rdf#Graph]] = {
      import akka.http.scaladsl.unmarshalling.{Unmarshal, Unmarshaller}
-     import akka.util.ByteString
-
-     def decode(bytes: ByteString, entity: ResponseEntity) = {
-        val charBuffer = Unmarshaller.bestUnmarshallingCharsetFor(entity).nioCharset.decode(bytes.asByteBuffer)
-        val array = new Array[Char](charBuffer.length())
-        charBuffer.get(array)
-        new java.lang.String(array)
-     }
 
      GETRdfDoc(uri).flatMap {
         case HttpResponse(status,headers,entity,protocol) => {
-            implicit  val reqUnmarhaller = RdfMediaTypes.rdfUnmarshaller(uri,status,headers)
+            implicit  val reqUnmarhaller = RdfMediaTypes.rdfUnmarshaller(
+              ResponseSummary(uri,status,headers,entity.contentType)
+            )
             Unmarshal(entity).to[Rdf#Graph].map {g =>
               IRepresentation[Rdf#Graph](uri,status,headers,entity.contentType,g)
             }
