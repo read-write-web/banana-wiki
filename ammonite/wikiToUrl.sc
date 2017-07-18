@@ -10,7 +10,6 @@ import Sesame._
 import Sesame.ops._
 
 import $ivy.`com.typesafe.akka::akka-http:10.0.9`
-
 import akka.actor.ActorSystem
 import akka.actor.SupervisorStrategy
 import akka.http.scaladsl.Http
@@ -47,20 +46,25 @@ sealed trait Link[T]{
   def map[B](f: T=>B): Link[B] = this match {
      case ImageLink(tag, uri) => ImageLink(tag, f(uri))
      case HyperLink(tag, uri) => HyperLink(tag, f(uri))
+     case OtherLink(tag, url) => OtherLink(tag, f(url))
   }
 }
 
 case class ImageLink[T](tag: String, uri: T) extends Link[T]
 case class HyperLink[T](tag: String, uri: T) extends Link[T]
+case class OtherLink[T](tag: String = "", uri: T) extends Link[T]
 
 def gatherLinks(wikiLine: String): Seq[Link[String]] = {
-  val patternForLinks = """`[^`]*`|(!)?\[([^\[\]]+)\]\(([^\(\)]+)\)""".r
+  val patternForLinks = """`[^`]*`|(!)?\[([^\[\]]+)\]\(([^\(\)]+)\)|((https|http|ftp)://.*[^\\s+]\/)""".r
   val iterator = patternForLinks findAllMatchIn wikiLine
+  //Patten fix
 
   iterator.toSeq.map(_.subgroups).collect {
-    case "!" :: tag :: url :: Nil => ImageLink[String](tag , url)
-    case null :: tag :: url :: Nil if(tag != null && url != null) =>
+    case "!" :: tag :: url :: null :: null :: Nil => ImageLink[String](tag , url)
+    case null :: tag :: url :: null :: null :: Nil if(tag != null && url != null) =>
                                      HyperLink[String](tag , url)
+    case null :: null :: null :: url :: iCode :: Nil if(url != null) =>
+                                     OtherLink[String]("", url)
   }
 }
 
@@ -79,6 +83,9 @@ def mapToHttp(link: Link[AkkaUri]): (HttpRequest, Link[AkkaUri])  = link match {
         addHeader(Accept(image_star)), link)
   case HyperLink(tag, uri) => (HttpRequest(uri = link.uri).
         addHeader(Accept(star_star)), link)
+  case OtherLink(tag, url) => (HttpRequest(uri = link.uri).
+        addHeader(Accept(star_star)), link)
+  //case OtherLink(uri) => (HttpRequest(uri = link.uri)) //Accept all headers
 }
 
 
@@ -105,7 +112,20 @@ def browseThrough(flow: Source[(Try[HttpResponse], Link[Uri]),NotUsed]) {
   }
 }
 
+import java.net._
+import java.io._
+import scala.collection.mutable.ArrayBuffer
+import scala.io.Source.{fromInputStream}
 def checkLinks(path: Path){
+    /*val siteUrl: URL = new URL(url)
+    val siteContent = fromInputStream( siteUrl.openStream ).getLines.mkString("\n")
+    //loop this in some way
+    val collected = gatherLinks(read(siteContent))
+    val convertedToSource = convertLinksToSource(collected)
+    val flow = createFlow(convertedToSource)
+    browseThrough(flow)
+  }*/
+  //path: Path
   (ls! path).foreach{x =>
       if(x.ext == "md") {
         println(x)
