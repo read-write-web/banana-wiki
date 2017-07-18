@@ -57,12 +57,20 @@ trait WebException extends java.lang.RuntimeException with NoStackTrace with Pro
 case class HTTPException(resourceUri: String, msg: String) extends WebException
 case class ConnectionException(resourceUri: String, e: Throwable) extends WebException
 case class NodeTranslationException(graphLoc: String, problemNode: Rdf#Node, e: Throwable) extends WebException
-case class ParseException(resourceUri: String,
-                          status: StatusCode,
-                          responseHeaders: Seq[HttpHeader],
-                          contentType: ContentType,
-                          initialContent: String,
-                          e: Throwable) extends WebException
+case class MissingParserException(
+  resourceUri: String,
+  statusCode: StatusCode,
+  contentType: ContentType,
+  initialContent: String
+) extends WebException
+case class ParseException(
+  resourceUri: String,
+  status: StatusCode,
+  responseHeaders: Seq[HttpHeader],
+  contentType: ContentType,
+  initialContent: String,
+  e: Throwable
+) extends WebException
 
 
 object RdfMediaTypes {
@@ -85,28 +93,40 @@ object RdfMediaTypes {
    val `application/ld+json` = applicationWithOpenCharset("ld+json","jsonld")
 
 
-   def rdfUnmarshaller(requestUri: AkkaUri, status: StatusCode, headers: Iterable[HttpHeader]): FromEntityUnmarshaller[Try[Rdf#Graph]] = {
-        import Unmarshaller._
+   def rdfUnmarshaller(
+     requestUri: AkkaUri, status: StatusCode,
+     headers: Iterable[HttpHeader]
+   )(implicit ec: ExecutionContext): FromEntityUnmarshaller[Rdf#Graph] =
+      PredefinedFromEntityUnmarshallers.stringUnmarshaller flatMapWithInput { (entity, string) ⇒
         //todo: use non blocking parsers
-        val rdfunmarshaller = PredefinedFromEntityUnmarshallers.stringUnmarshaller mapWithInput { (entity, string) ⇒
-           val reader = entity.contentType.mediaType match { //<- this needs to be tuned!
-              case `text/turtle` => turtleReader
-              case `application/rdf+xml` => rdfXMLReader //new SesameRDFXMLReader()
-              case `application/ntriples` => ntriplesReader
-              case `application/ld+json` => jsonldReader
-              // case `text/html` => new SesameRDFaReader()
-           }
-           reader.read(new java.io.StringReader(string),requestUri.toString).recoverWith{ case e=>
-              Failure{ import entity._
-                 ParseException(requestUri.toString, status,headers.toSeq,contentType,string.take(400),e)
-                }
-           }
-        }
-        rdfunmarshaller.forContentTypes(`text/turtle`,`application/rdf+xml`,
-          `application/ntriples`,`application/ld+json`)//,`text/html`)
-  }
+         val readerOpt = entity.contentType.mediaType match { //<- this needs to be tuned!
+            case `text/turtle` => Some(turtleReader)
+            case `application/rdf+xml` => Some(rdfXMLReader)
+            case `application/ntriples` => Some(ntriplesReader)
+            case `application/ld+json` => Some(jsonldReader)
+            // case `text/html` => new SesameRDFaReader()
+            case _ => None
+         }
+         readerOpt.map{ reader=>
+           Future.fromTry {
+             reader.read(new java.io.StringReader(string),requestUri.toString) recoverWith {
+             case e => Failure(ParseException(
+               requestUri.toString, status,
+               headers.toSeq,entity.contentType,string.take(400),e)
+             )}
+          }
+        } getOrElse {
+           scala.concurrent.Future.failed(
+             MissingParserException(
+               requestUri.toString, status,
+               entity.contentType,string.take(400)
+             )
+           )
+       }
+    }
 
 }
+
 
 object Web {
     type PGWeb = IRepresentation[PointedGraph[Rdf]]
@@ -176,7 +196,7 @@ object Web {
     * links, with very simple explanations as to what went wrong accessing those
     * (hence the Try).
     */
-   def foafKnowsSource(webid: AkkaUri): Source[Try[PGWeb],_] =
+   def foafKnowsSource(webid: AkkaUri)(implicit web: Web): Source[Try[PGWeb],_] =
       uriSource(webid)
            .mapAsync(1){uri => web.pointedGET(uri)}
                       .via(addSeeAlso)
@@ -187,7 +207,7 @@ object Web {
 
 
    //add any rdfs:seeAlso going out from a node to the stream, placing the pointer on the same point in the other graph
-   def addSeeAlso: Flow[PGWeb,Try[PGWeb],_] = Flow[PGWeb].mapConcat{ pgweb =>
+   def addSeeAlso(implicit web: Web): Flow[PGWeb,Try[PGWeb],_] = Flow[PGWeb].mapConcat{ pgweb =>
        val seqFut:  immutable.Seq[Future[PGWeb]] = pgweb.jump(rdfs.seeAlso).to[immutable.Seq]
         //we want the see Also docs to be pointing to the same URI as the original pgweb
        val seeAlso = seqFut.map(fut => fut.map( _.map(pg=>PointedGraph[Rdf](pgweb.content.pointer,pg.graph) )))
@@ -199,7 +219,7 @@ object Web {
    def filterLinkedTo(rel: Rdf#URI, obj: Rdf#URI): Flow[PGWeb,PGWeb,_] =
      Flow[PGWeb].filter(htres => (htres.content/rel).exists(_.pointer == obj))
 
-   def consciensciousFriends(me: AkkaUri): Source[PGWeb,_] =
+   def consciensciousFriends(me: AkkaUri)(implicit web: Web): Source[PGWeb,_] =
       foafKnowsSource(me).via(filterForSuccess)
              .via(addSeeAlso)
              .via(filterForSuccess)
@@ -264,9 +284,8 @@ class Web(implicit ec: ExecutionContext) {
      GETRdfDoc(uri).flatMap {
         case HttpResponse(status,headers,entity,protocol) => {
             implicit  val reqUnmarhaller = RdfMediaTypes.rdfUnmarshaller(uri,status,headers)
-            Unmarshal(entity).to[Try[Rdf#Graph]].transform {
-              case Success(tryg) => tryg.map(IRepresentation[Rdf#Graph](uri,status,headers,entity.contentType,_))
-              case Failure(e) => Failure(e)
+            Unmarshal(entity).to[Rdf#Graph].map {g =>
+              IRepresentation[Rdf#Graph](uri,status,headers,entity.contentType,g)
             }
          }
        }
@@ -277,6 +296,3 @@ class Web(implicit ec: ExecutionContext) {
 
 
 }
-
-//make life easier in the shell by setting up the environment
-implicit val web = new Web()
