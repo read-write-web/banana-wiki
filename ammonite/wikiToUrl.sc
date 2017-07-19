@@ -128,16 +128,7 @@ import java.io._
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source.{fromInputStream}
 def checkLinks(path: Path){
-    /*val siteUrl: URL = new URL(url)
-    val siteContent = fromInputStream( siteUrl.openStream ).getLines.mkString("\n")
-    //loop this in some way
-    val collected = gatherLinks(read(siteContent))
-    val convertedToSource = convertLinksToSource(collected)
-    val flow = createFlow(convertedToSource)
-    browseThrough(flow)
-  }*/
-  //path: Path
-  (ls! path).foreach{x =>
+    (ls! path).foreach{x =>
       if(x.ext == "md") {
         println(x)
         val collected = gatherLinks(read(x))
