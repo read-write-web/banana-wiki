@@ -85,7 +85,6 @@ def mapToHttp(link: Link[AkkaUri]): (HttpRequest, Link[AkkaUri])  = link match {
         addHeader(Accept(star_star)), link)
   case OtherLink(tag, url) => (HttpRequest(uri = link.uri).
         addHeader(Accept(star_star)), link)
-  //case OtherLink(uri) => (HttpRequest(uri = link.uri)) //Accept all headers
 }
 
 
@@ -107,9 +106,21 @@ def browseThrough(flow: Source[(Try[HttpResponse], Link[Uri]),NotUsed]) {
   flow.runForeach {
     case (Success(HttpResponse(status, headers, entity, protocol)), link) =>
           println(s"Url: $link.uri. Status code - $status")
+          if(status.isRedirection){
+            for(header <- headers){
+              if(header.is("location")){
+                val relocated: String = header.value
+                println("Relocated to: " + relocated)
+                val gatheredLinks: Seq[Link[String]] = gatherLinks(relocated)
+                val newlinksToSource = convertLinksToSource(gatheredLinks)
+                val flowCreated: Source[(Try[HttpResponse], Link[Uri]), NotUsed] = createFlow(newlinksToSource)
+                browseThrough(flowCreated)
+              }
+            }
+          }
     case (Failure(e) , link) =>
           println(s"Url: $link.uri Error type $e")
-  }
+    }
 }
 
 import java.net._
