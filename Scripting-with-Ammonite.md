@@ -1120,6 +1120,11 @@ browse(data)
 
 #### Finding the conscientious friends II
 
+```scala
+Web.consciensciousFriends(timbl).toMat(
+  Sink.fold(List[PGWeb]()){ case (l,t)=> t::l }
+)(Keep.right).run
+```
 
 
 # Appendix
