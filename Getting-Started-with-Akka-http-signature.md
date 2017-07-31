@@ -1,4 +1,5 @@
 
+
 ***
 
 ## Running the server
@@ -17,9 +18,9 @@ One can then import it into their scripts from inside the ammonite shell. The us
 ## The Key Pair
 
 The Akka-Http-Signature library uses asymmetrical cryptography. As detailed in the [Public-Key cryptography wikipedia page](https://en.wikipedia.org/wiki/Public-key_cryptography), this is a cryptographic system that uses pairs of private and public keys. Public keys can be looked up by anyone and private keys are only known by the owner. Communication is this system is achieved the following way: 
-1. The sender encrypts a message using the public key of the receiver
-1. The receiver gets the message and can decrypt it by using his own private key.
-The message sent can only be decrypted via the private key of the receiver.
+1. The sender signs the header of a message with the public key of the receiver
+1. The receiver gets the message and can read it using his own private key.
+The message sent can only be interpreted via the private key of the receiver.
 
 For this to work, it must be easy for the user to generate a pair of a public and private key. The way this is done is by 
 using the RSA algorithm to generate keys. These keys can be stored in your local file system or attached to a server. The private key should never be shared with anyone as it is the only way for the user to decrypt messages sent to him. This ensures access control is maintained and provides secure communication on the web
@@ -72,7 +73,7 @@ For example, the keys' moduli can also be displayed in hexadecimal format:
 ```scala
 @ val hexaPublic = pub.getModulus.toString(16)
 
-hexaModul : String = "937adccd722bc982aed4847872b81e36b890bca13166714bc2befe4d8547b6218ecd2da1eb020198a4ea00e4db6757c7dda738ec8db8b3bf211d3a3a17e196a2035bc4c79d06d8a581487d9f49e86374712b10ef500dfa242a20cab52911e2636c9d99b21fe9768ef2381989a25dc8b0b7a46531249aac27c4b8ab451a19d5fbdfa5f78b0deac9778c7ff87cf6106ae4a6433466beb21df1265bf1fc9ab9cc80d7aff8cc4d0f67ae28647e4048da8df753493b8de6a8e0961416b4b37f7012907d2e756034b8a84c6e495c8f1d81f69843ae51379571d83b38e1c08a08c3748ef75ed7ecb016d0c8426b30c8c5060a08f87f6764b0ec14667cd6f0daa1244157"
+hexaPublic : String = "937adccd722bc982aed4847872b81e36b890bca13166714bc2befe4d8547b6218ecd2da1eb020198a4ea00e4db6757c7dda738ec8db8b3bf211d3a3a17e196a2035bc4c79d06d8a581487d9f49e86374712b10ef500dfa242a20cab52911e2636c9d99b21fe9768ef2381989a25dc8b0b7a46531249aac27c4b8ab451a19d5fbdfa5f78b0deac9778c7ff87cf6106ae4a6433466beb21df1265bf1fc9ab9cc80d7aff8cc4d0f67ae28647e4048da8df753493b8de6a8e0961416b4b37f7012907d2e756034b8a84c6e495c8f1d81f69843ae51379571d83b38e1c08a08c3748ef75ed7ecb016d0c8426b30c8c5060a08f87f6764b0ec14667cd6f0daa1244157"
 ```
 The RSAKeys class' function .save() will return a String representation of the key in Base64 format. This mime type is based on the hexadecimal notation used in the PEM format readable by OpenSSL.
 
@@ -139,44 +140,82 @@ import recordBinder._
 Finally, after that, the user can create the Cert object that contains the required dependencies to turn a Key into a Pointed Graph
 
 ```scala
-object Cert {
+@ object Cert {
 
-          implicit val rsaClassUri = classUrisFor[RSAPublicKey](cert.RSAPublicKey)
-          val factory = KeyFactory.getInstance("RSA")
-          val exponent = property[BigInteger](cert.exponent)
-          val modulus = property[Array[Byte]](cert.modulus)
+   implicit val rsaClassUri = classUrisFor[RSAPublicKey](cert.RSAPublicKey)
+   val factory = KeyFactory.getInstance("RSA")
+   val exponent = property[BigInteger](cert.exponent)
+   val modulus = property[Array[Byte]](cert.modulus)
 
-          implicit val binder: PGBinder[Rdf, RSAPublicKey] =
-          pgb[RSAPublicKey](modulus, exponent)(
-            (m, e) => factory.generatePublic(new RSAPublicKeySpec(new BigInteger(m), e)).asInstanceOf[RSAPublicKey],
-            key => Some((key.getModulus.toByteArray, key.getPublicExponent))
-            ) // withClasses rsaClassUri
-
-      }
+   implicit val binder: PGBinder[Rdf, RSAPublicKey] =
+   pgb[RSAPublicKey](modulus, exponent)(
+      (m, e) => factory.generatePublic(new RSAPublicKeySpec(new BigInteger(m), e)).asInstanceOf[RSAPublicKey],
+      key => Some((key.getModulus.toByteArray, key.getPublicExponent))
+             ) // withClasses rsaClassUri
+}
 
 defined object Cert
 
-import Cert._
+@ import Cert._
 ```
 
 After this all dependencies should be resolved and the user will be able to transform the keys into a Pointed Graph:
 
 ```scala
-@ val keyGraph = pub.toPG
+@ val keyPG = pub.toPG
 
-keyGraph: PointedGraph[RDF] = org.w3.banana.PointedGraph$$anon$1@7f8fa63d
+keyPG : PointedGraph[RDF] = org.w3.banana.PointedGraph$$anon$1@7f8fa63d
 ```
 One can then retrieve both the pointer and the graph:
 
 ```scala
-@ keyPG = keyGraph.graph
+@ val keyGraph = keyGraph.graph
 
-keyPG: RDF#Graph =  {5880.026289.0-02638.0-6288.0-06411.0-23110.021178.029228.0 http://www.w3.org/ns/auth/cert#exponent "65537"^^http://www.w3.org/2001/XMLSchema#integer; 5880.026289.0-02638.0-6288.0-06411.0-23110.021178.029228.0 @http://www.w3.org/ns/auth/cert#modulus "00937adccd722bc982aed4847872b81e36b890bca13166714bc2befe4d8547b6218ecd2da1eb020198a4ea00e4db6757c7dda738ec8db8b3bf211d3a3a17e196a2035bc4c79d06d8a581487d9f49e86374712b10ef500dfa242a20cab52911e2636c9d99b21fe9768ef2381989a25dc8b0b7a46531249aac27c4b8ab451a19d5fbdfa5f78b0deac9778c7ff87cf6106ae4a6433466beb21df1265bf1fc9ab9cc80d7aff8cc4d0f67ae28647e4048da8df753493b8de6a8e0961416b4b37f7012907d2e756034b8a84c6e495c8f1d81f69843ae51379571d83b38e1c08a08c3748ef75ed7ecb016d0c8426b30c8c5060a08f87f6764b0ec14667cd6f0daa1244157"^^http://www.w3.org/2001/XMLSchema#hexBinary}
+keyGraph : RDF#Graph =  {5880.026289.0-02638.0-6288.0-06411.0-23110.021178.029228.0 http://www.w3.org/ns/auth/cert#exponent "65537"^^http://www.w3.org/2001/XMLSchema#integer; 5880.026289.0-02638.0-6288.0-06411.0-23110.021178.029228.0 @http://www.w3.org/ns/auth/cert#modulus "00937adccd722bc982aed4847872b81e36b890bca13166714bc2befe4d8547b6218ecd2da1eb020198a4ea00e4db6757c7dda738ec8db8b3bf211d3a3a17e196a2035bc4c79d06d8a581487d9f49e86374712b10ef500dfa242a20cab52911e2636c9d99b21fe9768ef2381989a25dc8b0b7a46531249aac27c4b8ab451a19d5fbdfa5f78b0deac9778c7ff87cf6106ae4a6433466beb21df1265bf1fc9ab9cc80d7aff8cc4d0f67ae28647e4048da8df753493b8de6a8e0961416b4b37f7012907d2e756034b8a84c6e495c8f1d81f69843ae51379571d83b38e1c08a08c3748ef75ed7ecb016d0c8426b30c8c5060a08f87f6764b0ec14667cd6f0daa1244157"^^http://www.w3.org/2001/XMLSchema#hexBinary}
 
-keyRDFPointer = keyGraph.pointer
+@ val keyRDFPointer = keyGraph.pointer
 
 keyRDFPointer: RDF#Node = 5880.026289.0-02638.0-6288.0-06411.0-23110.021178.029228.0
 ```
+As is evident, the pointer is an automatically generated Blank Node, which can be quite difficult to process. Because of this, it would be more optimal to change the pointer to not be a blank node but rather a #uri. The user can change the pointer by using the following function : 
+
+```scala
+@ implicit class PGwrapper(val pg: PointedGraph[Rdf]) extends AnyVal {
+  def rename(to: Rdf#Node)(implicit ops: RDFOps[Rdf]): PointedGraph[Rdf] = {
+    val oldNode = pg.pointer
+    PointedGraph[Rdf](
+      to,
+      ops.makeGraph(pg.graph.triples.map{ triple =>
+        ops.fromTriple(triple) match {
+          case (oldNode,rel,obj) => ops.makeTriple(to,rel,obj)
+          case (subj,rel,oldNode) => ops.makeTriple(subj,rel,to)
+          case _ => triple
+        }
+      })
+    )
+  }
+}
+
+defined class PGwrapper
+```
+
+After this, one can simply change the header by into something simple by calling this function like so:
+
+```scala
+@ val finalKeyPG = keyPG.rename(URI("#key"))
+
+finalKeyPG: PointedGraph[Rdf] = org.w3.banana.PointedGraph$$anon$1@4353a749
+
+@ finalKeyPGPointer = finalKeyPG.pointer
+
+finalKeyPGPointer : Rdf#Node = #key
+
+@ finalKeyPGGraph = finalKeyPG.graph
+
+finalKeyPGGraph: Rdf#Graph =  {#key @http://www.w3.org/ns/auth/cert#modulus "0087acb657366c6a911a0ce2470c24b8d85dd21ae76c6001db37d122c2eafe0fe2ae35541ccdd3c1c81603d98dd7d61b2c31c8605f81fbc3566604b7755793698836caaa99d868477c46b5b735529b50c0acfea6e10fc9b953697a67d57499801beb651e7e08343131a00d1873ab753ce5e79fc961874ee132472f7f210bc38966081fe263c620b67469b52cc555a26dee4fa10d8f40959e0e13516cc0bd1c1669ce53367d28248149142429b127f01e13d9bf21de52a4ac5694d5038a94178e144823b152fa19cbbc094dd40ddbd41e2195a19081125887fccedae21c50660c629a6f2ba4c85a54e1a6472f90b7b62ac7fe58fdae9daa0edc8edec49802fbfac7"^^http://www.w3.org/2001/XMLSchema#hexBinary; #key @http://www.w3.org/ns/auth/cert#exponent "65537"^^http://www.w3.org/2001/XMLSchema#integer}
+```
+
+As evident, the Blank node is now changed to something more readable and useful. 
 
 The user can transform his key graph into a one of several well-known formats before publishing it on the server. One such format is turtle. In order to do that however, more external libraries are required:
 
@@ -189,13 +228,12 @@ import org.w3.banana.jena.Jena
 One can then represent the rdf of the key in turtle format: 
 
 ```scala
-@ val toTurtle = turtleWriter.asString(keyGraph.graph,"").get
+@ val toTurtle = turtleWriter.asString(finalKeyPGGraph.graph,"").get
 
-toTurtle: String = """<5880.026289.0-02638.0-6288.0-06411.0-23110.021178.029228.0>
-        <http://www.w3.org/ns/auth/cert#exponent>
+toTurtle: String = """<#key>  <http://www.w3.org/ns/auth/cert#exponent>
                 65537 ;
         <http://www.w3.org/ns/auth/cert#modulus>
-                "00937adccd722bc982aed4847872b81e36b890bca13166714bc2befe4d8547b6218ecd2da1eb020198a4ea00e4db6757c7dda738ec8db8b3bf211d3a3a17e196a2035bc4c79d06d8a581487d9f49e86374712b10ef500dfa242a20cab52911e2636c9d99b21fe9768ef2381989a25dc8b0b7a46531249aac27c4b8ab451a19d5fbdfa5f78b0deac9778c7ff87cf6106ae4a6433466beb21df1265bf1fc9ab9cc80d7aff8cc4d0f67ae28647e4048da8df753493b8de6a8e0961416b4b37f7012907d2e756034b8a84c6e495c8f1d81f69843ae51379571d83b38e1c08a08c3748ef75ed7ecb016d0c8426b30c8c5060a08f87f6764b0ec14667cd6f0daa1244157"^^<http://www.w3.org/2001/XMLSchema#hexBinary> .
+                "0087acb657366c6a911a0ce2470c24b8d85dd21ae76c6001db37d122c2eafe0fe2ae35541ccdd3c1c81603d98dd7d61b2c31c8605f81fbc3566604b7755793698836caaa99d868477c46b5b735529b50c0acfea6e10fc9b953697a67d57499801beb651e7e08343131a00d1873ab753ce5e79fc961874ee132472f7f210bc38966081fe263c620b67469b52cc555a26dee4fa10d8f40959e0e13516cc0bd1c1669ce53367d28248149142429b127f01e13d9bf21de52a4ac5694d5038a94178e144823b152fa19cbbc094dd40ddbd41e2195a19081125887fccedae21c50660c629a6f2ba4c85a54e1a6472f90b7b62ac7fe58fdae9daa0edc8edec49802fbfac7"^^<http://www.w3.org/2001/XMLSchema#hexBinary> .
 """
 ``` 
 This will return a String representation of the Pointed Graph in turtle format. This representation can also be saved on your local file system like so:
@@ -204,7 +242,7 @@ This will return a String representation of the Pointed Graph in turtle format. 
 write(wd/"publicKey.ttl", RSAKeys.save(toTurtle))
 ```
 
-As is evident, the pointer is an automatically generated Blank Node, which can be quite difficult to process. Because of this, it would be more optimal to change the pointer to not be a blank node but rather a #uri. The user can change the pointer manually by using a file editor into something simple - such as: *<#key>*
+----------------------------
 
 ### Attaching Public keys to a File/URI
 
@@ -214,10 +252,13 @@ One can use the `cp` or the `mv` Ammonite commands to move the public key file i
 cp(wd/"publicKey.ttl" , wd/"rww-play"/"test_www"/"pubKey.ttl")
 ```
 
-The Rww-play library, which the Akka-http-signature library makes use of, uses symbolic links to indicate default representations of different documents. The Http content negotiation functionality is thus preserved. Http Content negotiation is a mechanism that is used for representing different representations of a resource at the same URI. The user can then specify which is best suited for them. This is quite a complex mechanism and the setup for it can vary greatly between different servers.
+The Rww-play web server, which the Akka-http-signature library makes use of, uses symbolic links to indicate default representations of different documents. The Http content negotiation functionality is thus preserved. Http Content negotiation is a mechanism that is used for representing different representations of a resource at the same URI. The user can then specify which is best suited for them. 
 
-One can make a symbolic link to their public key file using the following commands in the bash console:
+Content negotiation is preserved because the user can link to files without specifically addressing them via their original name by using these symbolic links. This makes it possible for links to be followed both on the file system and on the web in the same way. 
 
+This can be quite a complex mechanism and the setup for it can vary greatly between different servers.
+
+To create a symbolic link, one can make a symbolic link to their public key file using the following commands in the bash console:
 
 ```bash
 $ ln -s pubKey.ttl pubKey
@@ -229,22 +270,34 @@ Currently in order to manipulate the access control one can use `curl` and `PATC
 To demonstrate how access control changes user permitted actions, one can also manually edit the .acl.ttl file. To do this, one must navigate to the test_www directory (or the server that contains the Key files) and look for the correct file. After that in order to permit access to the , the user must comment out the following:
 
 ```bash
-@prefix acl: <http://www.w3.org/ns/auth/acl#> .
+@prefix acl: <http://www.w3.org/ns/auth/acl#> . 
 @prefix cert: <http://www.w3.org/ns/auth/cert#> .
 
-[] acl:accessTo <card>, <card.ttl> ;
-   acl:agent <card#me> ;
-#        acl:agentClass <http://xmlns.com/foaf/0.1/Agent> ;
-        acl:mode acl:Read .
 
-# we allow authentication on the key too
-<card#me> cert:key <key#> .
+[] acl:accessTo <pubKey>, <pubKey.ttl> ;
+
+   acl:agent <pubKey#me> ;
+
+#   acl:agent [ cert:key <publicKey#key> ];
+
+	acl:agentClass <http://xmlns.com/foaf/0.1/Agent> ;
+
+	acl:mode acl:Read .
+
 
 
 <> acl:include <.acl> .
 ```
-This allows the user to manipulate access control by simply commenting out `acl:agentClass <http://xmlns.com/foaf/0.1/Agent> ;` 
+
+This allows the user to manipulate access control by simply commenting out `acl:agent [ cert:key <publicKey#key> ];` 
 
 After that, the access to the Key files specified will be restricted. And therefore they will not be usable via the symbolic link created earlier. 
 
+If one attempts to do so, via curl for example, they will be presented with the following error message: 
+
+```bash
+$ curl -i -k https://localhost:8443/2013/pubKey.acl
+
+curl: (7) Couldn't connect to server
+```
 ***
