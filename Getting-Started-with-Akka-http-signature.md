@@ -17,10 +17,11 @@ One can then import it into their scripts from inside the ammonite shell. The us
 
 ## The Key Pair
 
-The Akka-Http-Signature library uses asymmetrical cryptography. As detailed in the [Public-Key cryptography wikipedia page](https://en.wikipedia.org/wiki/Public-key_cryptography), this is a cryptographic system that uses pairs of private and public keys. Public keys can be looked up by anyone and private keys are only known by the owner. Communication is this system is achieved the following way: 
-1. The sender signs the header of a message with the public key of the receiver
-1. The receiver gets the message and can read it using his own private key.
-The message sent can only be interpreted via the private key of the receiver.
+The Akka-Http-Signature library uses asymmetrical cryptography. As detailed in the [Public-Key cryptography wikipedia page](https://en.wikipedia.org/wiki/Public-key_cryptography), this is a cryptographic system that uses pairs of private and public keys. The library uses them to form Digital Signatures. In such a system public keys can be looked up by anyone and private keys are only known by their owner. Communication is achieved the following way : 
+1. The sender projects a message signed by his own private key 
+2. The message can only be verified by clients that have access to that sender's public key
+
+Because the messages are signed by the sender's private key and can only be verified via that sender's public key - only the intended clients (one that have access to said key) can ever receive the information within the message. This also ensures that the message is not changed in any way as the signature is bound to the original message and verification will fail if any alterations have occured.
 
 For this to work, it must be easy for the user to generate a pair of a public and private key. The way this is done is by 
 using the RSA algorithm to generate keys. These keys can be stored in your local file system or attached to a server. The private key should never be shared with anyone as it is the only way for the user to decrypt messages sent to him. This ensures access control is maintained and provides secure communication on the web
