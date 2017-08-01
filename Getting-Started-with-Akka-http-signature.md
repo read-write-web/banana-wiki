@@ -297,7 +297,7 @@ After that, the access to the Key files specified will be restricted. And theref
 If one now restarts the server and attempts to access the files, via curl for example, they will be presented with the following error message: 
 
 ```bash
-$ curl -i -k https://localhost:8443/2013/pubKey.acl
+$ curl -i -k https://localhost:8443/2013/pubKey
 
 HTTP/1.1 404 Not Found
 Content-Type: text/plain; charset=utf-8
