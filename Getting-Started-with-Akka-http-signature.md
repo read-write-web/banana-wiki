@@ -1,6 +1,16 @@
-
-
+ 
 ***
+
+## Introduction
+
+In this section we will be describing how one gets started working with the Akka-Http library and its functionalities. 
+
+The section will start with a general introduction of how the library functions, including a description of key pairs and how one uses them. 
+
+After that we will be explaining how to save the generated keys to different formats and how to save them to a file. 
+
+Finally we will look at how to run the rww-play server locally and manipulate access control of the files that contain the public and private keys.
+
 
 ## The Key Pair
 
