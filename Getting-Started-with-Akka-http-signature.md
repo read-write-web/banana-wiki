@@ -19,7 +19,7 @@ One can then import it into their scripts from inside the ammonite shell. The us
 
 The Akka-Http-Signature library uses asymmetrical cryptography. As detailed in the [Public-Key cryptography wikipedia page](https://en.wikipedia.org/wiki/Public-key_cryptography), this is a cryptographic system that uses pairs of private and public keys. The library uses them to form Digital Signatures. In such a system public keys can be looked up by anyone and private keys are only known by their owner. Communication is achieved the following way : 
 1. The sender sends a message with a header that is signed by his own private key 
-2. The server then receives the message and uses the sender's public key to verify his identity
+2. The server then receives the message and uses the sender's public key to verify that sender's identity
 
 Because the messages have headers that are signed by the sender's private key and can only be verified via that sender's public key, and that public key is known to the server, the sender's identity can always be verified using it. This ensures a secure connection as all senders' identities can be verified when receiving messages. 
 
