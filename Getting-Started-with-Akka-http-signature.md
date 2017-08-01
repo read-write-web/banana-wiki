@@ -231,7 +231,7 @@ import org.w3.banana.jena.Jena
 One can then represent the rdf of the key in turtle format: 
 
 ```scala
-@ val toTurtle = turtleWriter.asString(finalKeyPGGraph.graph,"").get
+@ val toTurtle = turtleWriter.asString(finalKeyPGGraph ,"").get
 
 toTurtle: String = """<#key>  <http://www.w3.org/ns/auth/cert#exponent>
                 65537 ;
@@ -270,7 +270,7 @@ $ ln -s pubKey.ttl pubKey
 
 Currently in order to manipulate the access control one can use `curl` and `PATCH` commands [As detailed in the rww-play wiki page](https://github.com/read-write-web/rww-play/wiki/Curl-Interactions).
 
-To demonstrate how access control changes user permitted actions, one can also manually edit the .acl.ttl file. To do this, one must navigate to the test_www directory (or the server that contains the Key files) and look for the correct file. After that in order to permit access to the , the user must comment out the following:
+To demonstrate how access control changes user permitted actions, one can also manually edit the .acl.ttl file. To do this, one must navigate to the test_www directory (or the server that contains the Key files) and look for the correct file. After that in order to permit access to the , the user must comment out the `acl:agentClass <http://xmlns.com/foaf/0.1/Agent> ;`. This expression gives everyone permission to access this file and by commenting it out the user makes sure access is restricted only to them.
 
 ```bash
 @prefix acl: <http://www.w3.org/ns/auth/acl#> . 
@@ -283,11 +283,9 @@ To demonstrate how access control changes user permitted actions, one can also m
 
 #   acl:agent [ cert:key <publicKey#key> ];
 
-	acl:agentClass <http://xmlns.com/foaf/0.1/Agent> ;
+#	acl:agentClass <http://xmlns.com/foaf/0.1/Agent> ;
 
 	acl:mode acl:Read .
-
-
 
 <> acl:include <.acl> .
 ```
@@ -296,11 +294,27 @@ This allows the user to manipulate access control by simply commenting out `acl:
 
 After that, the access to the Key files specified will be restricted. And therefore they will not be usable via the symbolic link created earlier. 
 
-If one attempts to do so, via curl for example, they will be presented with the following error message: 
+If one now restarts the server and attempts to access the files, via curl for example, they will be presented with the following error message: 
 
 ```bash
 $ curl -i -k https://localhost:8443/2013/pubKey.acl
 
-curl: (7) Couldn't connect to server
+HTTP/1.1 404 Not Found
+Content-Type: text/plain; charset=utf-8
+Content-Length: 1093
+
+could not find actor for Actor[akka://rww/user/rootContainer/card]rww.ldp.LDPExceptions$ResourceDoesNotExist: could not find actor for Actor[akka://rww/user/rootContainer/card]
+        at rww.ldp.actor.RWWActorSystemImpl$$anonfun$3$$anon$1$$anonfun$receive$1.applyOrElse(RWWActorSystemImpl.scala:94)
+        at akka.actor.Actor$class.aroundReceive(Actor.scala:467)
+        at rww.ldp.actor.RWWActorSystemImpl$$anonfun$3$$anon$1.aroundReceive(RWWActorSystemImpl.scala:89)
+        at akka.actor.ActorCell.receiveMessage(ActorCell.scala:516)
+        at akka.actor.ActorCell.invoke(ActorCell.scala:487)
+        at akka.dispatch.Mailbox.processMailbox(Mailbox.scala:238)
+        at akka.dispatch.Mailbox.run(Mailbox.scala:220)
+        at akka.dispatch.ForkJoinExecutorConfigurator$AkkaForkJoinTask.exec(AbstractDispatcher.scala:397)
+        at scala.concurrent.forkjoin.ForkJoinTask.doExec(ForkJoinTask.java:260)
+        at scala.concurrent.forkjoin.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:1339)
+        at scala.concurrent.forkjoin.ForkJoinPool.runWorker(ForkJoinPool.java:1979)
+        at scala.concurrent.forkjoin.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:107)
 ```
 ***
