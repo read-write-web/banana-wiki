@@ -242,7 +242,7 @@ toTurtle: String = """<#key>  <http://www.w3.org/ns/auth/cert#exponent>
 This will return a String representation of the Pointed Graph in turtle format. This representation can also be saved on your local file system like so:
 
 ```scala
-write(wd/"publicKey.ttl", RSAKeys.save(toTurtle))
+write(wd/"publicKey.ttl", toTurtle)
 ```
 
 ----------------------------
