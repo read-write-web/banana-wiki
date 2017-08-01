@@ -35,15 +35,29 @@ import scala.concurrent.Future
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
 import scala.util.{Try,Success,Failure}
+
+import $ivy.`run.cosy::akka-http-signature:0.2-SNAPSHOT`
+import run.cosy.auth.{HttpSignature=>Sig}
+
 //see http://doc.akka.io/docs/akka/snapshot/scala/general/configuration.html#listing-of-the-reference-configuration
-/*val shortScriptConf = ConfigFactory.parseString("""
-   |akka {
-   |   loggers = ["akka.event.Logging$DefaultLogger"]
-   |   logging-filter = "akka.event.DefaultLoggingFilter"
-   |   loglevel = "ERROR"
+val shortScriptConf = ConfigFactory.parseString("""
+   |#akka {
+   |#   loggers = ["akka.event.Logging$DefaultLogger"]
+   |#   logging-filter = "akka.event.DefaultLoggingFilter"
+   |#   loglevel = "ERROR"
+   |#}
+   |# see http://typesafehub.github.io/ssl-config/ExampleSSLConfig.html#id5
+   |# and http://typesafehub.github.io/ssl-config/WSQuickStart.html#connecting-to-a-remote-server-over-https
+   |ssl-config.ssl {
+   |   trustManager = {
+   |     stores = [
+   |       { type = "PEM", path = "/Volumes/Dev/Programming/Scala/banana-rdf.wiki/keys/localhost_8443.crt" }
+   |       { path: ${java.home}/lib/security/cacerts } # Fallback to default JSSE trust store
+   |     ]
+   |   }  
    |}
- """.stripMargin)*/
-implicit val system = ActorSystem("akka_ammonite_script")
+ """.stripMargin)
+implicit val system = ActorSystem("akka_ammonite_script",ConfigFactory.load(shortScriptConf))
 val log = Logging(system.eventStream, "banana-rdf")
 implicit val materializer = ActorMaterializer(
                 ActorMaterializerSettings(system).withSupervisionStrategy(Supervision.resumingDecider))
@@ -54,7 +68,8 @@ val bblfish = AkkaUri("http://bblfish.net/people/henry/card#me")
 val timbl = AkkaUri("https://www.w3.org/People/Berners-Lee/card#i")
 
 trait WebException extends java.lang.RuntimeException with NoStackTrace with Product with Serializable
-case class HTTPException(resourceUri: String, msg: String) extends WebException
+case class HTTPException(response: ResponseSummary, msg: String) extends WebException
+case class AuthException(response: ResponseSummary, msg: String) extends WebException
 case class StatusCodeException(response: ResponseSummary) extends WebException
 case class ConnectionException(resourceUri: String, e: Throwable) extends WebException
 case class NodeTranslationException(graphLoc: String, problemNode: Rdf#Node, e: Throwable) extends WebException
@@ -239,7 +254,9 @@ class Web(implicit ec: ExecutionContext) {
 
    //todo: add something to the response re number of redirects
    //see: https://github.com/akka/akka-http/issues/195
-   def GET(req: HttpRequest, maxRedirect: Int = 4,history: List[ResponseSummary]=List())(
+   def GET(req: HttpRequest, maxRedirect: Int = 4,
+           history: List[ResponseSummary]=List(), 
+           keyChain: List[Sig.Client]=List())(
      implicit  system: ActorSystem, mat: Materializer
    ): Future[(HttpResponse,List[ResponseSummary])] = {
       try {
@@ -258,7 +275,26 @@ class Web(implicit ec: ExecutionContext) {
                   if (maxRedirect > 0)
                      GET(newReq, maxRedirect - 1,summary::history)
                   else Http().singleRequest(newReq).map((_,summary::history))
-                 }.getOrElse(Future.failed(HTTPException(req.uri.toString,s"Location header not found on ${resp.status} for ${req.uri}")))
+                 }.getOrElse(Future.failed(HTTPException(summary,s"Location header not found on ${resp.status} for ${req.uri}")))
+              }
+              case Unauthorized  => {
+                 import akka.http.scaladsl.model.headers.{`WWW-Authenticate`,Date}
+                 val date = Date(akka.http.scaladsl.model.DateTime.now)
+                 val reqWithDate = req.addHeader(date)
+                 val tryFuture = for { 
+                    wwa <- resp.header[`WWW-Authenticate`]
+                             .fold[Try[`WWW-Authenticate`]](
+                                Failure(HTTPException(summary,"no WWW-Authenticate header"))
+                              )(scala.util.Success(_)) 
+                    headers <- Try { Sig.Client.signatureHeaders(wwa).get } //<- this should always succeed
+                    client <- keyChain.headOption.fold[Try[Sig.Client]](
+                                 Failure(AuthException(summary,"no client keys"))
+                              )(scala.util.Success(_)) 
+                    authorization <- client.authorize(reqWithDate,headers)
+                 } yield { 
+                   GET(reqWithDate.addHeader(authorization), maxRedirect, summary::history, keyChain.tail)  
+                 }
+                 Future.fromTry(tryFuture).flatten
               }
               case _ => {
                 resp.discardEntityBytes()
