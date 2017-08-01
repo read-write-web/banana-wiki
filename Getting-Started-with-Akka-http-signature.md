@@ -2,19 +2,6 @@
 
 ***
 
-## Running the server
-
-In order to run a local server one must first locally clone the [Read-write-web play repository](https://github.com/read-write-web/rww-play). After that the user must navigate to their local Rww-play directory and run sbt there. For more information on how to run the server and the exact command used refer to the [Rww-play README page](https://github.com/read-write-web/rww-play).
-
-Users can also publish on their local Read-write-web play. In order to do this, a user must run the following commands inside the local rww-play directory.
-
-```bash
-$ sbt 
-> publishLocal
-```
-
-One can then import it into their scripts from inside the ammonite shell. The user should then be able to make a GET request on their local rww-play and check whether they can access a resource that has access control. This means that the user will need to make themselves a key.
-
 ## The Key Pair
 
 The Akka-Http-Signature library uses asymmetrical cryptography. As detailed in the [Public-Key cryptography wikipedia page](https://en.wikipedia.org/wiki/Public-key_cryptography), this is a cryptographic system that uses pairs of private and public keys. The library uses them to form Digital Signatures. In such a system public keys can be looked up by anyone and private keys are only known by their owner. Communication is achieved the following way : 
@@ -266,7 +253,21 @@ To create a symbolic link, one can make a symbolic link to their public key file
 ```bash
 $ ln -s pubKey.ttl pubKey
 ```
-### Access Control
+
+## Running the server
+
+In order to run a local server one must first locally clone the [Read-write-web play repository](https://github.com/read-write-web/rww-play). After that the user must navigate to their local Rww-play directory and run sbt there. For more information on how to run the server and the exact command used refer to the [Rww-play README page](https://github.com/read-write-web/rww-play).
+
+Users can also publish on their local Read-write-web play. In order to do this, a user must run the following commands inside the local rww-play directory.
+
+```bash
+$ sbt 
+> publishLocal
+```
+
+One can then import it into their scripts from inside the ammonite shell. The user should then be able to make a GET request on their local rww-play and check whether they can access a resource that has access control. This means that the user will need to make themselves a key.
+
+## Access Control
 
 Currently in order to manipulate the access control one can use either `curl` and `PATCH` commands, [As detailed in the rww-play wiki page](https://github.com/read-write-web/rww-play/wiki/Curl-Interactions), or edit files manually using a text editor.
 
