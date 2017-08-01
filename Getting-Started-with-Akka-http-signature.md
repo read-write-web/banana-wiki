@@ -1,15 +1,16 @@
- 
+
+
 ***
 
 ## Introduction
 
-In this section we will be describing how one gets started working with the Akka-Http library and its functionalities. 
+The Akka-Http Signature library is used to enforse access control and security accross the web. It is an improvement on other well-known authentification methods such as the [Basic Access Authentification](https://www.wikiwand.com/en/Basic_access_authentication). Compared to it the Akka-http signature is easier to use as the public private key pair which the library uses are automatically generated and easily stored on a web server or a local file system. 
 
-The section will start with a general introduction of how the library functions, including a description of key pairs and how one uses them. 
+Unlike passwords used in normal Passowrd authentfication strategies - the public and private key pair is almost impossible to replicate -making the authentification legitimate and the connection completely secure.
 
-After that we will be explaining how to save the generated keys to different formats and how to save them to a file. 
+One can generate these keys easily - as described in the following section. After that, the generated keys can be represented in different formats and stored on a local file system or attached to a web server.
 
-Finally we will look at how to run the rww-play server locally and manipulate access control of the files that contain the public and private keys.
+The user can also run the rww-play web server and manipulate the access control of the files containing the keys which will allow for safe and secure storage of the key pair.
 
 
 ## The Key Pair
