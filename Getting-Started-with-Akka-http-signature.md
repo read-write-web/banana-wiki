@@ -268,9 +268,9 @@ $ ln -s pubKey.ttl pubKey
 ```
 ### Access Control
 
-Currently in order to manipulate the access control one can use `curl` and `PATCH` commands [As detailed in the rww-play wiki page](https://github.com/read-write-web/rww-play/wiki/Curl-Interactions).
+Currently in order to manipulate the access control one can use either `curl` and `PATCH` commands, [As detailed in the rww-play wiki page](https://github.com/read-write-web/rww-play/wiki/Curl-Interactions), or edit files manually using a text editor.
 
-To demonstrate how access control changes user permitted actions, one can also manually edit the .acl.ttl file. To do this, one must navigate to the test_www directory (or the server that contains the Key files) and look for the correct file. After that in order to permit access to the , the user must comment out the `acl:agentClass <http://xmlns.com/foaf/0.1/Agent> ;`. This expression gives everyone permission to access this file and by commenting it out the user makes sure access is restricted only to them.
+To demonstrate how access control changes user permitted actions, we will show how to manually edit the .acl.ttl file. To do this, one must navigate to the test_www directory (or the server that contains the Key files) and look for the correct file. After that in order to permit access to the , the user must comment out the `acl:agentClass <http://xmlns.com/foaf/0.1/Agent> ;`. This expression gives everyone permission to access this file and by commenting it out the user makes sure access is restricted only to them.
 
 ```bash
 @prefix acl: <http://www.w3.org/ns/auth/acl#> . 
