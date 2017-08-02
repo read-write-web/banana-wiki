@@ -39,34 +39,6 @@ import scala.util.{Try,Success,Failure}
 import $ivy.`run.cosy::akka-http-signature:0.2-SNAPSHOT`
 import run.cosy.auth.{HttpSignature=>Sig}
 
-//see http://doc.akka.io/docs/akka/snapshot/scala/general/configuration.html#listing-of-the-reference-configuration
-val shortScriptConf = ConfigFactory.parseString("""
-   |#akka {
-   |#   loggers = ["akka.event.Logging$DefaultLogger"]
-   |#   logging-filter = "akka.event.DefaultLoggingFilter"
-   |#   loglevel = "ERROR"
-   |#}
-   |# see http://typesafehub.github.io/ssl-config/ExampleSSLConfig.html#id5
-   |# and http://typesafehub.github.io/ssl-config/WSQuickStart.html#connecting-to-a-remote-server-over-https
-   |ssl-config.ssl {
-   |   trustManager = {
-   |     stores = [
-   |       { type = "PEM", path = "/Volumes/Dev/Programming/Scala/banana-rdf.wiki/keys/localhost_8443.crt" }
-   |       { path: ${java.home}/lib/security/cacerts } # Fallback to default JSSE trust store
-   |     ]
-   |   }  
-   |}
- """.stripMargin)
-implicit val system = ActorSystem("akka_ammonite_script",ConfigFactory.load(shortScriptConf))
-val log = Logging(system.eventStream, "banana-rdf")
-implicit val materializer = ActorMaterializer(
-                ActorMaterializerSettings(system).withSupervisionStrategy(Supervision.resumingDecider))
-implicit val ec: ExecutionContext = system.dispatcher
-
-//just to play with
-val bblfish = AkkaUri("http://bblfish.net/people/henry/card#me")
-val timbl = AkkaUri("https://www.w3.org/People/Berners-Lee/card#i")
-
 trait WebException extends java.lang.RuntimeException with NoStackTrace with Product with Serializable
 case class HTTPException(response: ResponseSummary, msg: String) extends WebException
 case class AuthException(response: ResponseSummary, msg: String) extends WebException
@@ -189,7 +161,7 @@ object Web {
          Source(immutable.Seq(uris:_*).to[collection.immutable.Iterable])
 
    //simple transformation of a Future into an always successful one - useful to avoid failed futures leading to closure of streams
-   def neverFail[X](fut: Future[X]): Future[Try[X]] = fut.transform(Success(_))
+   def neverFail[X](fut: Future[X])(implicit ec: ExecutionContext): Future[Try[X]] = fut.transform(Success(_))
 
    //flatten a flow of Flow[Future[X]] to a Flow[X]
    def flattenFutureFlow[X](n: Int=1): Flow[Future[X],X,_] = Flow[Future[X]].mapAsyncUnordered(n)(identity)
@@ -201,7 +173,8 @@ object Web {
     * links, with very simple explanations as to what went wrong accessing those
     * (hence the Try).
     */
-   def foafKnowsSource(webid: AkkaUri)(implicit web: Web): Source[Try[PGWeb],_] =
+   def foafKnowsSource(webid: AkkaUri)(implicit web: Web): Source[Try[PGWeb],_] = {
+      import web._
       uriSource(webid)
            .mapAsync(1){uri => web.pointedGET(uri)}
                       .via(addSeeAlso)
@@ -209,10 +182,10 @@ object Web {
                       case Success(pgweb) => pgweb.jump(foaf.knows).to[immutable.Iterable].map(neverFail(_))
                       case failure => immutable.Iterable(Future.successful(failure))
                    }.via(flattenFutureFlow(50))
-
+  }
 
    //add any rdfs:seeAlso going out from a node to the stream, placing the pointer on the same point in the other graph
-   def addSeeAlso(implicit web: Web): Flow[PGWeb,Try[PGWeb],_] = Flow[PGWeb].mapConcat{ pgweb =>
+   def addSeeAlso(implicit web: Web, ec: ExecutionContext): Flow[PGWeb,Try[PGWeb],_] = Flow[PGWeb].mapConcat{ pgweb =>
        val seqFut:  immutable.Seq[Future[PGWeb]] = pgweb.jump(rdfs.seeAlso).to[immutable.Seq]
         //we want the see Also docs to be pointing to the same URI as the original pgweb
        val seeAlso = seqFut.map(fut => fut.map( _.map(pg=>PointedGraph[Rdf](pgweb.content.pointer,pg.graph) )))
@@ -224,12 +197,13 @@ object Web {
    def filterLinkedTo(rel: Rdf#URI, obj: Rdf#URI): Flow[PGWeb,PGWeb,_] =
      Flow[PGWeb].filter(htres => (htres.content/rel).exists(_.pointer == obj))
 
-   def consciensciousFriends(me: AkkaUri)(implicit web: Web): Source[PGWeb,_] =
+   def consciensciousFriends(me: AkkaUri)(implicit web: Web): Source[PGWeb,_] = {
+      import web._
       foafKnowsSource(me).via(filterForSuccess)
              .via(addSeeAlso)
              .via(filterForSuccess)
              .via(filterLinkedTo(foaf.knows,me.toRdf))
-
+   }
 
    /*
    def xxx() = {
@@ -246,7 +220,7 @@ case class ResponseSummary(
   on: AkkaUri, code: StatusCode,
   header: Seq[HttpHeader], respTp: ContentType)
 
-class Web(implicit ec: ExecutionContext) {
+class Web(implicit val ec: ExecutionContext, val as: ActorSystem, val mat: Materializer) {
    import Web._
 
 
@@ -256,9 +230,7 @@ class Web(implicit ec: ExecutionContext) {
    //see: https://github.com/akka/akka-http/issues/195
    def GET(req: HttpRequest, maxRedirect: Int = 4,
            history: List[ResponseSummary]=List(), 
-           keyChain: List[Sig.Client]=List())(
-     implicit  system: ActorSystem, mat: Materializer
-   ): Future[(HttpResponse,List[ResponseSummary])] = {
+           keyChain: List[Sig.Client]=List()): Future[(HttpResponse,List[ResponseSummary])] = {
       try {
          import StatusCodes.{Success,_}
          Http().singleRequest(req)
@@ -268,7 +240,6 @@ class Web(implicit ec: ExecutionContext) {
             resp.status match {
               case Success(_) => Future.successful((resp,summary::history))
               case Redirection(_) => {
-                  log.info(s"received a ${resp.status} for ${req.uri}")
                   resp.header[headers.Location].map { loc =>
                   val newReq = req.copy(uri = loc.uri)
                   resp.discardEntityBytes()
