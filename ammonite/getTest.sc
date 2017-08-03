@@ -28,11 +28,9 @@ val shortScriptConf = ConfigFactory.parseString("""
    |          { path : ${java.home}/lib/security/cacerts } # Fallback to default JSSE trust store
    |        ]
    |      } 
-   |   }
-   |   ssl-config.debug = {
-   | #     ssl = true
-   | #     trustmanager = true
-   | #     keymanager = true
+   |
+   |      # for more info see: https://typesafehub.github.io/ssl-config/DebuggingSSL.html
+   |      debug.ssl = false
    |   }
    |}
  """.stripMargin)
