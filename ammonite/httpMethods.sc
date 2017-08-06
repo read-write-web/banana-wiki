@@ -62,6 +62,8 @@ implicit val ec: ExecutionContext = system.dispatcher
 object Test {
    import run.cosy.solid.client.Web._
    import java.security.interfaces.RSAPublicKey
+   import run.cosy.auth.HttpSignature
+
    //just to play with
    lazy val bblfish = AkkaUri("http://bblfish.net/people/henry/card#me")
    lazy val timbl = AkkaUri("https://www.w3.org/People/Berners-Lee/card#i")
@@ -77,19 +79,33 @@ object Test {
     pubKey.map(_.toPG)
    } 
 
-   lazy val localClient = run.cosy.auth.HttpSignature.Client(Uri("https://localhost:8443/2013/key#"),privKey.get)
+   lazy val localClient = run.cosy.auth.HttpSignature.Client(
+        Uri("https://localhost:8443/2013/key#"),privKey.get)
   
-   lazy val cosyClient = run.cosy.auth.HttpSignature.Client(Uri("https://cosy.run:8443/2013/key#"),privKey.get)
+   lazy val cosyClient = HttpSignature.Client(Uri("https://cosy.run:8443/2013/key#"),privKey.get)
 
    lazy val web = new run.cosy.solid.client.Web[Rdf]()
    import web._
-   def fetchLocal = web.run(rdfGetRequest(Uri("https://localhost:8443/2013/card")),4,List(),List(localClient))
-   def fetchCosy = web.run(rdfGetRequest(Uri("https://cosy.run:8443/2013/card")),4,List(),List(cosyClient))
+   def fetchLocal = web.run(rdfGetRequest(Uri("https://localhost:8443/2013/card")),
+                            keyChain = List(localClient))
+   def fetchCosy = web.run(rdfGetRequest(Uri("https://cosy.run:8443/2013/card")),
+                           keyChain = List(cosyClient))
+
    def postLocal = web.run(
-         turtlePostRequest(Uri("https://localhost:8443/2013/"),pubKeyPG.get.graph).get,
-         4,List(),List(cosyClient))
+       req      = turtlePostRequest(
+                    container = Uri("https://localhost:8443/2013/"),
+                    graph     = pubKeyPG.get.graph,
+                    slug      = Some("myKey")
+                 ).get,
+       keyChain = List(cosyClient)
+   )
    def postLocalGood = web.run(
-         turtlePostRequest(Uri("https://localhost:8443/2013/"),pubKeyPG.get.graph).get,
-         4,List(),List(localClient))
+       req     = turtlePostRequest(
+                   container = Uri("https://localhost:8443/2013/"),
+                   graph     = pubKeyPG.get.graph,
+                   slug      = Some("myKey")
+                 ).get,
+       keyChain = List(localClient)
+   )
 
 }
