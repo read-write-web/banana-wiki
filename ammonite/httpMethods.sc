@@ -79,33 +79,47 @@ object Test {
     pubKey.map(_.toPG)
    } 
 
-   lazy val localClient = run.cosy.auth.HttpSignature.Client(
+   lazy val localKey = run.cosy.auth.HttpSignature.Client(
         Uri("https://localhost:8443/2013/key#"),privKey.get)
   
-   lazy val cosyClient = HttpSignature.Client(Uri("https://cosy.run:8443/2013/key#"),privKey.get)
+   lazy val cosyKey = HttpSignature.Client(Uri("https://cosy.run:8443/2013/key#"),privKey.get)
 
    lazy val web = new run.cosy.solid.client.Web[Rdf]()
+
+   import run.cosy.solid.RdfMediaTypes._
+   import org.w3.banana.io.Turtle
    import web._
    def fetchLocal = web.run(rdfGetRequest(Uri("https://localhost:8443/2013/card")),
-                            keyChain = List(localClient))
+                            keyChain = List(localKey))
    def fetchCosy = web.run(rdfGetRequest(Uri("https://cosy.run:8443/2013/card")),
-                           keyChain = List(cosyClient))
+                           keyChain = List(cosyKey))
 
-   def postLocal = web.run(
-       req      = turtlePostRequest(
+   def postLocalWrongKey = web.run(
+       req      = postRequest[`text/turtle`](
                     container = Uri("https://localhost:8443/2013/"),
                     graph     = pubKeyPG.get.graph,
                     slug      = Some("myKey")
                  ).get,
-       keyChain = List(cosyClient)
+       keyChain = List(cosyKey)
    )
-   def postLocalGood = web.run(
-       req     = turtlePostRequest(
+   def postLocalGoodKey = web.run(
+       req     = postRequest[`text/turtle`](
                    container = Uri("https://localhost:8443/2013/"),
                    graph     = pubKeyPG.get.graph,
                    slug      = Some("myKey")
                  ).get,
-       keyChain = List(localClient)
+       keyChain = List(localKey)
    )
+ 
+   //it should be possible to see it first fail then succeed 
+   def postLocalMultiKeys = web.run(
+       req     = postRequest[`application/ld+json`](
+                   container = Uri("https://localhost:8443/2013/"),
+                   graph     = pubKeyPG.get.graph,
+                   slug      = Some("myKey")
+                 ).get,
+       keyChain = List(cosyKey,localKey)
+   )
+
 
 }
