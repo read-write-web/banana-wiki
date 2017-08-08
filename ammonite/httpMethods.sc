@@ -94,6 +94,11 @@ object Test {
    def fetchCosy = web.run(GETrdf(Uri("https://cosy.run:8443/2013/card")),
                            keyChain = List(cosyKey))
 
+   def fetchLocalPg = {
+        import Jena._
+        web.GETpg(Uri("https://localhost:8443/2013/card"),List(localKey))
+   }
+
    def postLocalWrongKey = web.run(
        req      = POST[`text/turtle`](
                     container = Uri("https://localhost:8443/2013/"),
