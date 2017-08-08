@@ -89,13 +89,13 @@ object Test {
    import run.cosy.solid.RdfMediaTypes._
    import org.w3.banana.io.Turtle
    import web._
-   def fetchLocal = web.run(rdfGetRequest(Uri("https://localhost:8443/2013/card")),
+   def fetchLocal = web.run(GETrdf(Uri("https://localhost:8443/2013/card")),
                             keyChain = List(localKey))
-   def fetchCosy = web.run(rdfGetRequest(Uri("https://cosy.run:8443/2013/card")),
+   def fetchCosy = web.run(GETrdf(Uri("https://cosy.run:8443/2013/card")),
                            keyChain = List(cosyKey))
 
    def postLocalWrongKey = web.run(
-       req      = postRequest[`text/turtle`](
+       req      = POST[`text/turtle`](
                     container = Uri("https://localhost:8443/2013/"),
                     graph     = pubKeyPG.get.graph,
                     slug      = Some("myKey")
@@ -103,7 +103,7 @@ object Test {
        keyChain = List(cosyKey)
    )
    def postLocalGoodKey = web.run(
-       req     = postRequest[`text/turtle`](
+       req     = POST[`text/turtle`](
                    container = Uri("https://localhost:8443/2013/"),
                    graph     = pubKeyPG.get.graph,
                    slug      = Some("myKey")
@@ -113,7 +113,7 @@ object Test {
  
    //it should be possible to see it first fail then succeed 
    def postLocalMultiKeys = web.run(
-       req     = postRequest[`application/ld+json`](
+       req     = POST[`application/ld+json`](
                    container = Uri("https://localhost:8443/2013/"),
                    graph     = pubKeyPG.get.graph,
                    slug      = Some("myKey")
