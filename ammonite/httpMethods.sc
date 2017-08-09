@@ -84,14 +84,15 @@ object Test {
   
    lazy val cosyKey = HttpSignature.Client(Uri("https://cosy.run:8443/2013/key#"),privKey.get)
 
-   lazy val web = new run.cosy.solid.client.Web[Rdf]()
+   lazy val http = new run.cosy.solid.client.HTTP()
+   lazy val web = new run.cosy.solid.client.Web[Rdf](http)
 
    import run.cosy.solid.RdfMediaTypes._
    import org.w3.banana.io.Turtle
    import web._
-   def fetchLocal = web.run(GETrdf(Uri("https://localhost:8443/2013/card")),
+   def fetchLocal = http.run(GETrdf(Uri("https://localhost:8443/2013/card")),
                             keyChain = List(localKey))
-   def fetchCosy = web.run(GETrdf(Uri("https://cosy.run:8443/2013/card")),
+   def fetchCosy = http.run(GETrdf(Uri("https://cosy.run:8443/2013/card")),
                            keyChain = List(cosyKey))
 
    def fetchLocalPg = {
@@ -99,7 +100,7 @@ object Test {
         web.GETpg(Uri("https://localhost:8443/2013/card"),List(localKey))
    }
 
-   def postLocalWrongKey = web.run(
+   def postLocalWrongKey = http.run(
        req      = POST[`text/turtle`](
                     container = Uri("https://localhost:8443/2013/"),
                     graph     = pubKeyPG.get.graph,
@@ -107,7 +108,7 @@ object Test {
                  ).get,
        keyChain = List(cosyKey)
    )
-   def postLocalGoodKey = web.run(
+   def postLocalGoodKey = http.run(
        req     = POST[`text/turtle`](
                    container = Uri("https://localhost:8443/2013/"),
                    graph     = pubKeyPG.get.graph,
@@ -117,7 +118,7 @@ object Test {
    )
  
    //it should be possible to see it first fail then succeed 
-   def postLocalMultiKeys = web.run(
+   def postLocalMultiKeys = http.run(
        req     = POST[`application/ld+json`](
                    container = Uri("https://localhost:8443/2013/"),
                    graph     = pubKeyPG.get.graph,
