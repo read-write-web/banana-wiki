@@ -72,7 +72,7 @@ object RdfMediaTypes {
    //todo: check if there are other older mime types, or if there are widely used extensions
    val `text/turtle` = text("turtle","ttl")
    val `application/rdf+xml` = applicationWithOpenCharset("rdf+xml","rdf")
-   val `application/ntriples` = applicationWithFixedCharset("ntriples",`UTF-8`,"nt")
+   val `application/n-triples` = applicationWithFixedCharset("n-triples",`UTF-8`,"nt")
    val `application/ld+json` = applicationWithOpenCharset("ld+json","jsonld")
 
 
@@ -84,7 +84,7 @@ object RdfMediaTypes {
          val readerOpt = entity.contentType.mediaType match { //<- this needs to be tuned!
             case `text/turtle` => Some(turtleReader)
             case `application/rdf+xml` => Some(rdfXMLReader)
-            case `application/ntriples` => Some(ntriplesReader)
+            case `application/n-triples` => Some(ntriplesReader)
             case `application/ld+json` => Some(jsonldReader)
             // case `text/html` => new SesameRDFaReader()
             case _ => None
@@ -127,7 +127,7 @@ object Web {
       import akka.http.scaladsl.model.headers.Accept
       HttpRequest(uri=uri.fragmentLess)
            .addHeader(Accept(`text/turtle`,`application/rdf+xml`,
-                             `application/ntriples`,
+                             `application/n-triples`,
                              `application/ld+json`.withQValue(0.8), //our parser uses more memory
                              `text/html`.withQValue(0.2))) //we can't specify that we want RDFa in our markup
    }

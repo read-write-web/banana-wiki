@@ -47,7 +47,7 @@ object RdfMediaTypes {
    //also check for older media type usages
    val `text/turtle` = new MediaType("text","turtle", fileExtensions=Seq("ttl"))
    val `application/rdf+xml` = new MediaType("application","rdf+xml",fileExtensions=Seq("rdf"))
-   val `application/ntriples` = new MediaType("application","ntriples",fileExtensions=Seq("nt"))
+   val `application/n-triples` = new MediaType("application","n-triples",fileExtensions=Seq("nt"))
    val `application/ld+json` = new MediaType("application","ld+json",fileExtensions=Seq("jsonld"))
 }
 
@@ -77,7 +77,7 @@ object Decoders {
 
    implicit val rdfxml = decoderForRdfReader(`application/rdf+xml`)(rdfXMLReader,"Rdf Rdf/XML Reader failed")
 
-   implicit val ntriples = decoderForRdfReader( `application/ntriples`)(ntriplesReader,"NTriples  Reader failed")
+   implicit val ntriples = decoderForRdfReader( `application/n-triples`)(ntriplesReader,"NTriples  Reader failed")
 
    implicit val jsonld = decoderForRdfReader(`application/ld+json`)(jsonldReader,"Json-LD Reader failed")
 
